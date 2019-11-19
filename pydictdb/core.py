@@ -31,3 +31,9 @@ class Table(object):
 
     def _get_object(self, object_id):
         return copy.deepcopy(self.objects.get(object_id, None))
+
+    def _delete_object(self, object_id):
+        try:
+            del self.objects[object_id]
+        except KeyError:
+            pass

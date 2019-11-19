@@ -28,7 +28,7 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 class TableTestCase(unittest.TestCase):
-    def test_set_get(self):
+    def test_set_get_delete(self):
         kind = 'User'
         table = core.Table(kind)
         obj = {'name': 'Sam', 'groups': ['A', 'B']}
@@ -44,3 +44,9 @@ class TableTestCase(unittest.TestCase):
         obj['groups'].remove('A')
         self.assertNotEqual(table.objects[0], obj)
         self.assertNotEqual(table._get_object(0), obj)
+
+        table._delete_object(0)
+        self.assertFalse(0 in table.objects)
+
+        # delete a non-existed id without KeyError
+        table._delete_object(0)

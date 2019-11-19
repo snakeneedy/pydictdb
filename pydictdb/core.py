@@ -23,24 +23,24 @@ class Database(object):
 
 
 class Table(object):
-    def __init__(self, kind, objects={}):
+    def __init__(self, kind, dictionary={}):
         self.kind = kind
-        self.objects = objects
+        self.dictionary = dictionary
 
     def _set_object(self, object_id, obj):
-        self.objects[object_id] = dict(copy.deepcopy(obj))
+        self.dictionary[object_id] = dict(copy.deepcopy(obj))
 
     def _get_object(self, object_id):
-        return copy.deepcopy(self.objects.get(object_id, None))
+        return copy.deepcopy(self.dictionary.get(object_id, None))
 
     def _delete_object(self, object_id):
         try:
-            del self.objects[object_id]
+            del self.dictionary[object_id]
         except KeyError:
             pass
 
     def _check_id(self, object_id):
-        if object_id not in self.objects:
+        if object_id not in self.dictionary:
             if isinstance(object_id, str):
                 object_id = "'%s'" % object_id
             raise KeyError("invalid object_id %s" % str(object_id))

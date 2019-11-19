@@ -23,8 +23,8 @@ class DatabaseTestCase(unittest.TestCase):
         table = database.table(kind)
         self.assertEqual(table.kind, kind)
 
-        table.objects[0] = object()
-        self.assertEqual(table.objects[0], database._tables[kind][0])
+        table.dictionary[0] = object()
+        self.assertEqual(table.dictionary[0], database._tables[kind][0])
 
 
 class TableTestCase(unittest.TestCase):
@@ -33,20 +33,20 @@ class TableTestCase(unittest.TestCase):
         table = core.Table(kind)
         obj = {'name': 'Sam', 'groups': ['A', 'B']}
         table._set_object(0, obj)
-        self.assertEqual(table.objects[0], obj)
+        self.assertEqual(table.dictionary[0], obj)
         self.assertEqual(table._get_object(0), obj)
 
         obj['groups'].remove('A')
-        self.assertNotEqual(table.objects[0], obj)
+        self.assertNotEqual(table.dictionary[0], obj)
         self.assertNotEqual(table._get_object(0), obj)
 
         obj = table._get_object(0)
         obj['groups'].remove('A')
-        self.assertNotEqual(table.objects[0], obj)
+        self.assertNotEqual(table.dictionary[0], obj)
         self.assertNotEqual(table._get_object(0), obj)
 
         table._delete_object(0)
-        self.assertFalse(0 in table.objects)
+        self.assertFalse(0 in table.dictionary)
 
         # delete a non-existed id without KeyError
         table._delete_object(0)
@@ -56,7 +56,7 @@ class TableTestCase(unittest.TestCase):
         table = core.Table(kind)
         obj = {'name': 'Sam', 'groups': ['A', 'B']}
         object_id = table.insert(obj)
-        self.assertEqual(table.objects[object_id], obj)
+        self.assertEqual(table.dictionary[object_id], obj)
         self.assertEqual(table.get(object_id), obj)
 
         obj = {'name': 'Sam', 'groups': []}
@@ -65,7 +65,7 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(table.get(object_id), obj)
 
         table.delete(object_id)
-        self.assertFalse(object_id in table.objects)
+        self.assertFalse(object_id in table.dictionary)
         self.assertIsNone(table.get(object_id))
 
         with self.assertRaises(KeyError):

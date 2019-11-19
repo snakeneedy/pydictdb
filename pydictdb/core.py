@@ -107,3 +107,12 @@ class Table(object):
 
         for object_id in object_ids:
             self._delete_object(object_id)
+
+    def query(self, test_func=lambda obj: True):
+        return Query(self.dictionary, test_func)
+
+
+class Query(object):
+    def __init__(self, dictionary, test_func=lambda obj: True):
+        self.dictionary = dictionary
+        self.test_func = test_func

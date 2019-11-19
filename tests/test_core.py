@@ -105,3 +105,9 @@ class TableTestCase(unittest.TestCase):
         self.table.delete_multi(object_ids)
         for object_id in object_ids:
             self.assertFalse(object_id in self.table.dictionary)
+
+    def test_query(self):
+        self.table.insert({'name': 'Sam'})
+        query = self.table.query()
+        self.assertIsInstance(query, core.Query)
+        self.assertEqual(query.dictionary, self.table.dictionary)

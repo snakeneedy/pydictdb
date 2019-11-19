@@ -50,3 +50,26 @@ class TableTestCase(unittest.TestCase):
 
         # delete a non-existed id without KeyError
         table._delete_object(0)
+
+    def test_CRUD_methods(self):
+        kind = 'User'
+        table = core.Table(kind)
+        obj = {'name': 'Sam', 'groups': ['A', 'B']}
+        object_id = table.insert(obj)
+        self.assertEqual(table.objects[object_id], obj)
+        self.assertEqual(table.get(object_id), obj)
+
+        obj = {'name': 'Sam', 'groups': []}
+        self.assertNotEqual(table.get(object_id), obj)
+        table.update(object_id, obj)
+        self.assertEqual(table.get(object_id), obj)
+
+        table.delete(object_id)
+        self.assertFalse(object_id in table.objects)
+        self.assertIsNone(table.get(object_id))
+
+        with self.assertRaises(KeyError):
+            table.update(object_id, obj)
+
+        with self.assertRaises(KeyError):
+            table.delete(object_id)

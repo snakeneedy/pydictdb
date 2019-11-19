@@ -1,4 +1,5 @@
 import copy
+import datetime
 from . import storages
 
 
@@ -37,3 +38,30 @@ class Table(object):
             del self.objects[object_id]
         except KeyError:
             pass
+
+    def _check_id(self, object_id):
+        if object_id not in self.objects:
+            if isinstance(object_id, str):
+                object_id = "'%s'" % object_id
+            raise KeyError("invalid object_id %s" % str(object_id))
+
+    @classmethod
+    def _next_id(cls):
+        return str(int(datetime.datetime.now().timestamp() * 1000000))
+
+    def insert(self, obj):
+        object_id = self.__class__._next_id()
+        self._set_object(object_id, obj)
+        return object_id
+
+    def get(self, object_id):
+        return self._get_object(object_id)
+
+    def update(self, object_id, obj):
+        self._check_id(object_id)
+        self._set_object(object_id, obj)
+        return object_id
+
+    def delete(self, object_id):
+        self._check_id(object_id)
+        self._delete_object(object_id)

@@ -58,18 +58,52 @@ class Table(object):
         self._set_object(object_id, obj)
         return object_id
 
+    def insert_multi(self, objects):
+        return [self.insert(obj) for obj in objects]
+
     def get(self, object_id):
         return self._get_object(object_id)
+
+    def get_multi(self, object_ids):
+        return [self.get(object_id) for object_id in object_ids]
 
     def update(self, object_id, obj):
         self._check_id(object_id)
         self._set_object(object_id, obj)
         return object_id
 
+    def update_multi(self, object_ids, objects):
+        if len(object_ids) != len(objects):
+            raise ValueError("size of object_ids and objects must be the same")
+
+        for object_id in object_ids:
+            self._check_id(object_id)
+
+        for object_id, obj in zip(object_ids, objects):
+            self._set_object(object_id, obj)
+
+        return object_ids
+
     def update_or_insert(self, object_id, obj):
         self._set_object(object_id, obj)
         return object_id
 
+    def update_or_insert_multi(self, object_ids, objects):
+        if len(object_ids) != len(objects):
+            raise ValueError("size of object_ids and objects must be the same")
+
+        for object_id, obj in zip(object_ids, objects):
+            self._set_object(object_id, obj)
+
+        return object_ids
+
     def delete(self, object_id):
         self._check_id(object_id)
         self._delete_object(object_id)
+
+    def delete_multi(self, object_ids):
+        for object_id in object_ids:
+            self._check_id(object_id)
+
+        for object_id in object_ids:
+            self._delete_object(object_id)

@@ -79,3 +79,29 @@ class TableTestCase(unittest.TestCase):
 
         self.table.update_or_insert(0, obj)
         self.assertEqual(self.table.get(0), obj)
+
+    def test_CRUD_multi_methods(self):
+        objects = [
+            {'name': 'Sam'},
+            {'name': 'Tom'},
+            {'name': 'John'},
+        ]
+        object_ids = self.table.insert_multi(objects)
+        self.assertEqual(objects,
+                [self.table.dictionary[object_id] for object_id in object_ids])
+        self.assertEqual(objects, self.table.get_multi(object_ids))
+
+        objects = [
+            {'name': 'Sam', 'score': 99},
+            {'name': 'Tom', 'score': 98},
+            {'name': 'John', 'score': 97},
+        ]
+        self.table.update_multi(object_ids, objects)
+        self.assertEqual(objects, self.table.get_multi(object_ids))
+
+        self.table.update_or_insert_multi([0, 1, 2], objects)
+        self.assertEqual(objects, self.table.get_multi([0, 1, 2]))
+
+        self.table.delete_multi(object_ids)
+        for object_id in object_ids:
+            self.assertFalse(object_id in self.table.dictionary)

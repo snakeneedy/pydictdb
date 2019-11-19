@@ -1,0 +1,6 @@
+ipython
+pyflakes
+pylint
+pytest
+sphinx
+sphinx-rtd-theme

@@ -116,3 +116,7 @@ class Query(object):
     def __init__(self, dictionary, test_func=lambda obj: True):
         self.dictionary = dictionary
         self.test_func = test_func
+
+    def fetch(self):
+        dictionary = copy.deepcopy(self.dictionary)
+        return [obj for obj in dictionary.values() if self.test_func(obj)]

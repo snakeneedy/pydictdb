@@ -105,3 +105,38 @@ class TableTestCase(unittest.TestCase):
         self.table.delete_multi(object_ids)
         for object_id in object_ids:
             self.assertFalse(object_id in self.table.dictionary)
+
+    def test_query(self):
+        self.table.insert({'name': 'Sam'})
+        query = self.table.query()
+        self.assertIsInstance(query, core.Query)
+        self.assertEqual(query.dictionary, self.table.dictionary)
+
+
+class QueryTestCase(unittest.TestCase):
+    def test_fetch(self):
+        import logging
+        kind = 'User'
+        table = core.Table(kind)
+        objects = [
+            {'name': 'Sam', 'score': 50},
+            {'name': 'Tom', 'score': 60},
+            {'name': 'John', 'score': 70},
+        ]
+        object_ids = table.insert_multi(objects)
+        query = table.query()
+        self.assertEqual(query.fetch(), objects)
+        self.assertEqual(query.fetch(ids_only=True), object_ids)
+
+        query = table.query(lambda obj: obj['score'] >= 60)
+        self.assertEqual(query.fetch(), objects[1:])
+
+        def test_func(obj):
+            obj['score'] /= 10
+            return obj['score'] >= 6
+
+        # edit attribute in function, but remain unchanged in dictionary
+        query = table.query(test_func)
+        self.assertEqual(query.fetch(),
+                [{'name': 'Tom', 'score': 6.0}, {'name': 'John', 'score': 7.0}])
+        self.assertEqual(table.get_multi(object_ids), objects)

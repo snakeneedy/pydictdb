@@ -126,6 +126,7 @@ class QueryTestCase(unittest.TestCase):
         object_ids = table.insert_multi(objects)
         query = table.query()
         self.assertEqual(query.fetch(), objects)
+        self.assertEqual(query.fetch(ids_only=True), object_ids)
 
         query = table.query(lambda obj: obj['score'] >= 60)
         self.assertEqual(query.fetch(), objects[1:])

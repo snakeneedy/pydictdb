@@ -117,6 +117,10 @@ class Query(object):
         self.dictionary = dictionary
         self.test_func = test_func
 
-    def fetch(self):
+    def fetch(self, ids_only=False):
         dictionary = copy.deepcopy(self.dictionary)
-        return [obj for obj in dictionary.values() if self.test_func(obj)]
+        if ids_only:
+            return [object_id for object_id, obj in dictionary.items()
+                    if self.test_func(obj)]
+        else:
+            return [obj for obj in dictionary.values() if self.test_func(obj)]

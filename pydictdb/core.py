@@ -23,9 +23,13 @@ class Database(object):
 
 
 class Table(object):
-    def __init__(self, kind, dictionary={}):
+    def __init__(self, kind, dictionary=None):
         self.kind = kind
-        self.dictionary = dictionary
+        if dictionary is None:
+            self.dictionary = {}
+        else:
+            # bind dictionary to the argument one
+            self.dictionary = dictionary
 
     def _set_object(self, object_id, obj):
         self.dictionary[object_id] = dict(copy.deepcopy(obj))

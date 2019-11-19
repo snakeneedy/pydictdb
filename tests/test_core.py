@@ -28,51 +28,80 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 class TableTestCase(unittest.TestCase):
+    def setUp(self):
+        self.kind = 'User'
+        self.table = core.Table(self.kind)
+
+    def tearDown(self):
+        self.table.dictionary = {}
+
     def test_set_get_delete(self):
-        kind = 'User'
-        table = core.Table(kind)
         obj = {'name': 'Sam', 'groups': ['A', 'B']}
-        table._set_object(0, obj)
-        self.assertEqual(table.dictionary[0], obj)
-        self.assertEqual(table._get_object(0), obj)
+        self.table._set_object(0, obj)
+        self.assertEqual(self.table.dictionary[0], obj)
+        self.assertEqual(self.table._get_object(0), obj)
 
         obj['groups'].remove('A')
-        self.assertNotEqual(table.dictionary[0], obj)
-        self.assertNotEqual(table._get_object(0), obj)
+        self.assertNotEqual(self.table.dictionary[0], obj)
+        self.assertNotEqual(self.table._get_object(0), obj)
 
-        obj = table._get_object(0)
+        obj = self.table._get_object(0)
         obj['groups'].remove('A')
-        self.assertNotEqual(table.dictionary[0], obj)
-        self.assertNotEqual(table._get_object(0), obj)
+        self.assertNotEqual(self.table.dictionary[0], obj)
+        self.assertNotEqual(self.table._get_object(0), obj)
 
-        table._delete_object(0)
-        self.assertFalse(0 in table.dictionary)
+        self.table._delete_object(0)
+        self.assertFalse(0 in self.table.dictionary)
 
         # delete a non-existed id without KeyError
-        table._delete_object(0)
+        self.table._delete_object(0)
 
     def test_CRUD_methods(self):
-        kind = 'User'
-        table = core.Table(kind)
         obj = {'name': 'Sam', 'groups': ['A', 'B']}
-        object_id = table.insert(obj)
-        self.assertEqual(table.dictionary[object_id], obj)
-        self.assertEqual(table.get(object_id), obj)
+        object_id = self.table.insert(obj)
+        self.assertEqual(self.table.dictionary[object_id], obj)
+        self.assertEqual(self.table.get(object_id), obj)
 
         obj = {'name': 'Sam', 'groups': []}
-        self.assertNotEqual(table.get(object_id), obj)
-        table.update(object_id, obj)
-        self.assertEqual(table.get(object_id), obj)
+        self.assertNotEqual(self.table.get(object_id), obj)
+        self.table.update(object_id, obj)
+        self.assertEqual(self.table.get(object_id), obj)
 
-        table.delete(object_id)
-        self.assertFalse(object_id in table.dictionary)
-        self.assertIsNone(table.get(object_id))
-
-        with self.assertRaises(KeyError):
-            table.update(object_id, obj)
+        self.table.delete(object_id)
+        self.assertFalse(object_id in self.table.dictionary)
+        self.assertIsNone(self.table.get(object_id))
 
         with self.assertRaises(KeyError):
-            table.delete(object_id)
+            self.table.update(object_id, obj)
 
-        table.update_or_insert(0, obj)
-        self.assertEqual(table.get(0), obj)
+        with self.assertRaises(KeyError):
+            self.table.delete(object_id)
+
+        self.table.update_or_insert(0, obj)
+        self.assertEqual(self.table.get(0), obj)
+
+    def test_CRUD_multi_methods(self):
+        objects = [
+            {'name': 'Sam'},
+            {'name': 'Tom'},
+            {'name': 'John'},
+        ]
+        object_ids = self.table.insert_multi(objects)
+        self.assertEqual(objects,
+                [self.table.dictionary[object_id] for object_id in object_ids])
+        self.assertEqual(objects, self.table.get_multi(object_ids))
+
+        objects = [
+            {'name': 'Sam', 'score': 99},
+            {'name': 'Tom', 'score': 98},
+            {'name': 'John', 'score': 97},
+        ]
+        self.table.update_multi(object_ids, objects)
+        self.assertEqual(objects, self.table.get_multi(object_ids))
+
+        self.table.update_or_insert_multi([0, 1, 2], objects)
+        self.assertEqual(objects, self.table.get_multi([0, 1, 2]))
+
+        self.table.delete_multi(object_ids)
+        for object_id in object_ids:
+            self.assertFalse(object_id in self.table.dictionary)

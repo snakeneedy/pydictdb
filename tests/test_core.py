@@ -16,3 +16,12 @@ class DatabaseTestCase(unittest.TestCase):
 
         database.commit()
         self.assertEqual(database._tables, sto._memory)
+
+    def test_table(self):
+        database = core.Database()
+        kind = 'User'
+        table = database.table(kind)
+        self.assertEqual(table.kind, kind)
+
+        table.objects[0] = object()
+        self.assertEqual(table.objects[0], database._tables[kind][0])

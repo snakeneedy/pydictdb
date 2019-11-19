@@ -62,6 +62,10 @@ class Table(object):
         self._set_object(object_id, obj)
         return object_id
 
+    def update_or_insert(self, object_id, obj):
+        self._set_object(object_id, obj)
+        return object_id
+
     def delete(self, object_id):
         self._check_id(object_id)
         self._delete_object(object_id)

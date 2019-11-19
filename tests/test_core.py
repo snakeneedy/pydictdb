@@ -73,3 +73,6 @@ class TableTestCase(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             table.delete(object_id)
+
+        table.update_or_insert(0, obj)
+        self.assertEqual(table.get(0), obj)

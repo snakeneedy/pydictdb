@@ -1,3 +1,4 @@
+import copy
 from . import storages
 
 
@@ -24,3 +25,9 @@ class Table(object):
     def __init__(self, kind, objects={}):
         self.kind = kind
         self.objects = objects
+
+    def _set_object(self, object_id, obj):
+        self.objects[object_id] = dict(copy.deepcopy(obj))
+
+    def _get_object(self, object_id):
+        return copy.deepcopy(self.objects.get(object_id, None))

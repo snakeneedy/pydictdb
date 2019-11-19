@@ -25,3 +25,22 @@ class DatabaseTestCase(unittest.TestCase):
 
         table.objects[0] = object()
         self.assertEqual(table.objects[0], database._tables[kind][0])
+
+
+class TableTestCase(unittest.TestCase):
+    def test_set_get(self):
+        kind = 'User'
+        table = core.Table(kind)
+        obj = {'name': 'Sam', 'groups': ['A', 'B']}
+        table._set_object(0, obj)
+        self.assertEqual(table.objects[0], obj)
+        self.assertEqual(table._get_object(0), obj)
+
+        obj['groups'].remove('A')
+        self.assertNotEqual(table.objects[0], obj)
+        self.assertNotEqual(table._get_object(0), obj)
+
+        obj = table._get_object(0)
+        obj['groups'].remove('A')
+        self.assertNotEqual(table.objects[0], obj)
+        self.assertNotEqual(table._get_object(0), obj)

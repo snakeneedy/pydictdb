@@ -123,6 +123,31 @@ class ModelTestCase(unittest.TestCase):
         self.assertEqual(obj['birth'], '2009-01-01')
         self.assertEqual(obj['created_at'], '2019-01-01 13:10:30.000000')
 
+    def test_query(self):
+        class ModelInTestCase03(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute(default=0)
+            birth = db.DateAttribute()
+
+        db.delete_multi(ModelInTestCase03.query().fetch(keys_only=True))
+        models = [
+            ModelInTestCase03(name='Sam', score=90,
+                    birth=datetime.date(2009, 1, 1)),
+            ModelInTestCase03(name='Tom', score=80,
+                    birth=datetime.date(2010, 1, 1)),
+            ModelInTestCase03(name='John', score=70,
+                    birth=datetime.date(2011, 1, 1)),
+        ]
+        db.put_multi(models)
+        self.assertEqual(models, ModelInTestCase03.query().fetch())
+
+        query = ModelInTestCase03.query(lambda m: m.score >= 80)
+        self.assertEqual(models[:2], query.fetch())
+
+        query = ModelInTestCase03.query(
+                lambda m: m.birth >= datetime.date(2010, 1, 1))
+        self.assertEqual(models[1:], query.fetch())
+
 
 class KeyTestCase(unittest.TestCase):
     def test_get_class(self):

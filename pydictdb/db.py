@@ -182,6 +182,10 @@ class Model(BaseObject):
 
         return self.key
 
+    @classmethod
+    def query(cls, test_func=lambda obj: True):
+        return Query(cls.__name__, test_func)
+
 
 class Key(BaseObject):
     _classes_dict = {}
@@ -228,6 +232,26 @@ class Key(BaseObject):
     def delete(self):
         table = _database_in_use.table(self.kind)
         table.delete(self.object_id, ignore_exception=True)
+
+
+# NOTE: different interface from `core.Query`
+class Query(object):
+    def __init__(self, kind, test_func=lambda obj: True):
+        self.kind = kind
+        self.test_func = test_func
+
+    def fetch(self, keys_only=False):
+        table = _database_in_use.table(self.kind)
+        keys = []
+        for object_id in table.dictionary.keys():
+            key = Key(self.kind, object_id)
+            if self.test_func(key.get()):
+                keys.append(key)
+
+        if keys_only:
+            return keys
+
+        return get_multi(keys)
 
 
 def put_multi(models):

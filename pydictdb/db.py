@@ -19,27 +19,27 @@ class Attribute(object):
         if repeated:
             default = list(default)
 
-        self._check_value_class(default)
+        self.check_value_class(default)
         self.default = default
         self.kept = bool(kept)
 
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    def _check_value_class(self, value):
-        def check_one(value):
-            for _class in self._allowed_classes:
-                if isinstance(value, _class):
-                    break
-            else:
-                msg = "value type '%s' is not allowed" % type(value).__name__
-                raise TypeError(msg)
+    def _post_check_value_class(self, value):
+        for _class in self._allowed_classes:
+            if isinstance(value, _class):
+                break
+        else:
+            msg = "value type '%s' is not allowed" % type(value).__name__
+            raise TypeError(msg)
 
+    def check_value_class(self, value):
         if self.repeated:
             for val in value:
-                check_one(val)
+                self._post_check_value_class(val)
         else:
-            check_one(value)
+            self._post_check_value_class(value)
 
     def decode(self, generic_value):
         return generic_value
@@ -59,12 +59,12 @@ class BooleanAttribute(Attribute):
 class IntegerAttribute(Attribute):
     _allowed_classes = (int, type(None))
 
-    def _check_value_class(self, value):
+    def _post_check_value_class(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super()._check_value_class(value)
+        super()._post_check_value_class(value)
 
 
 class FloatAttribute(Attribute):
@@ -153,7 +153,7 @@ class Model(BaseObject):
         cls_dict = self.__class__.__dict__
         if name in cls_dict and isinstance(cls_dict[name], Attribute):
             try:
-                cls_dict[name]._check_value_class(value)
+                cls_dict[name].check_value_class(value)
             except TypeError:
                 # NOTE: more readable error message
                 msg = "attribute '%s' type '%s' is not allowed" % (

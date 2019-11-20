@@ -4,7 +4,8 @@ from pydictdb import db
 
 
 class ModelInTestDB(db.Model):
-    pass
+    name = db.StringAttribute()
+    score = db.IntegerAttribute()
 
 
 class AttributeTestCase(unittest.TestCase):
@@ -53,6 +54,19 @@ class ModelTestCase(unittest.TestCase):
         self.assertTrue('ModelInTestDB' in db._database_in_use._tables)
         self.assertEqual(db._database_in_use.table(key.kind).get(key.object_id),
                 model.to_dict(exclude=('key',)))
+
+    def test_check_on_setattr(self):
+        ModelInTestDB(name='Sam', score=90)
+        with self.assertRaises(TypeError):
+            # 'name' should be 'str'
+            ModelInTestDB(name=12345)
+
+        with self.assertRaises(TypeError):
+            # 'score' should be 'int'
+            ModelInTestDB(score='90')
+
+        # pass on not-set attribute
+        ModelInTestDB(height='180.0')
 
 
 class KeyTestCase(unittest.TestCase):

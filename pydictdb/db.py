@@ -90,6 +90,19 @@ class Model(BaseObject):
         self.key = kwargs.pop('key', None)
         super().__init__(**kwargs)
 
+    def __setattr__(self, name, value):
+        cls_dict = self.__class__.__dict__
+        if name in cls_dict and isinstance(cls_dict[name], Attribute):
+            try:
+                cls_dict[name]._check_value_class(value)
+            except TypeError:
+                # NOTE: more readable error message
+                msg = "attribute '%s' type '%s' is not allowed" % (
+                        name, type(value).__name__)
+                raise TypeError(msg)
+
+        return super().__setattr__(name, value)
+
     def put(self):
         kind = self.__class__.__name__
         table = _database_in_use.table(kind)

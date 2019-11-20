@@ -1,6 +1,7 @@
 import datetime
 import unittest
 
+from pydictdb import core
 from pydictdb import db
 
 
@@ -94,7 +95,8 @@ class ModelTestCase(unittest.TestCase):
         model = ModelInTestCase(name='Sam', score=100)
         key = model.put()
         self.assertTrue('score' in model.to_dict())
-        self.assertFalse('score' in key.get().to_dict())
+        self.assertFalse('score' in
+                db._database_in_use._tables['ModelInTestCase'][key.object_id])
 
         # non-kept attribute still check type
         with self.assertRaises(TypeError):
@@ -107,6 +109,19 @@ class ModelTestCase(unittest.TestCase):
 
         self.assertEqual(ModelInTestCase().name, 'Sam')
         self.assertEqual(ModelInTestCase().score, 100)
+
+    def test_encode_when_put(self):
+        class ModelInTestCase01(db.Model):
+            birth = db.DateAttribute()
+            created_at = db.DatetimeAttribute()
+
+        birth = datetime.date(2009, 1, 1)
+        created_at = datetime.datetime(2019, 1, 1, 13, 10, 30)
+        model = ModelInTestCase01(birth=birth, created_at=created_at)
+        key = model.put()
+        obj = db._database_in_use._tables['ModelInTestCase01'][key.object_id]
+        self.assertEqual(obj['birth'], '2009-01-01')
+        self.assertEqual(obj['created_at'], '2019-01-01 13:10:30.000000')
 
 
 class KeyTestCase(unittest.TestCase):
@@ -123,3 +138,18 @@ class KeyTestCase(unittest.TestCase):
         self.assertIsNone(db.Key('ModelInTestDB', 0).get())
 
         self.assertIsNone(db.Key('abcdefghijklmnopqrstuvwxyz', 0).get())
+
+    def test_decode_when_get(self):
+        class ModelInTestCase01(db.Model):
+            birth = db.DateAttribute()
+            created_at = db.DatetimeAttribute()
+
+        birth = datetime.date(2009, 1, 1)
+        created_at = datetime.datetime(2019, 1, 1, 13, 10, 30)
+        object_id = core.Table._next_id()
+        db._database_in_use.table('ModelInTestCase01').dictionary[object_id] = {
+            'birth': '2009-01-01', 'created_at': '2019-01-01 13:10:30.000000',
+        }
+        key = db.Key('ModelInTestCase01', object_id)
+        self.assertEqual(key.get().birth, birth)
+        self.assertEqual(key.get().created_at, created_at)

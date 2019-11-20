@@ -168,6 +168,12 @@ class Model(BaseObject):
         table = _database_in_use.table(kind)
         attributes = self._get_kept_attributes()
         obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
+        for name, attr in attributes.items():
+            if name in obj:
+                obj[name] = attr.encode(obj[name])
+            else:
+                obj[name] = attr.get_default()
+
         if self.key:
             table.update_or_insert(self.key.object_id, obj)
         else:
@@ -209,5 +215,12 @@ class Key(BaseObject):
         cls = self._get_class(self.kind)
         if cls is None:
             return None
+
+        attributes = cls._get_kept_attributes()
+        for name, attr in attributes.items():
+            if name in obj:
+                obj[name] = attr.decode(obj[name])
+            else:
+                obj[name] = attr.get_default()
 
         return cls(key=self, **obj)

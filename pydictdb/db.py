@@ -242,10 +242,12 @@ class Query(object):
 
     def fetch(self, keys_only=False):
         table = _database_in_use.table(self.kind)
-        core_query = core.Query(dictionary=table.dictionary,
-                test_func=self.test_func)
-        object_ids = core_query.fetch(ids_only=True)
-        keys = [Key(self.kind, object_id) for object_id in object_ids]
+        keys = []
+        for object_id in table.dictionary.keys():
+            key = Key(self.kind, object_id)
+            if self.test_func(key.get()):
+                keys.append(key)
+
         if keys_only:
             return keys
 

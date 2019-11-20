@@ -83,15 +83,6 @@ class Key(BaseObject):
                         queue.append(child)
 
         _class = cls._classes_dict.get(kind, None)
-        is_TypeError = False
-        try:
-            is_TypeError = not issubclass(_class, Model)
-        except TypeError:
-            is_TypeError = True
-
-        if is_TypeError:
-            raise TypeError("invalid kind '%s'" % kind)
-
         return _class
 
     def get(self):
@@ -101,4 +92,7 @@ class Key(BaseObject):
             return None
 
         cls = self._get_class(self.kind)
+        if cls is None:
+            return None
+
         return cls(key=self, **obj)

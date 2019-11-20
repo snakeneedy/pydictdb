@@ -6,9 +6,11 @@ _database_in_use = core.Database()
 
 
 class Attribute(object):
-    _allowed_classes = tuple()
+    _allowed_classes = (type(None),)
 
-    def __init__(self, kept=True):
+    def __init__(self, default=None, kept=True):
+        self._check_value_class(default)
+        self.default = default
         self.kept = bool(kept)
 
     @classmethod

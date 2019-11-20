@@ -21,6 +21,30 @@ class AttributeTestCase(unittest.TestCase):
         not_allowed = [list(), tuple(), dict(), ModelInTestDB()]
         test_attribute(attr, allowed, not_allowed)
 
+        attr = db.BooleanAttribute()
+        allowed = [bool(), None]
+        not_allowed = [int(), float(), str(), list(), tuple(), dict(),
+                ModelInTestDB()]
+        test_attribute(attr, allowed, not_allowed)
+
+        attr = db.IntegerAttribute()
+        allowed = [int(), None]
+        not_allowed = [bool(), float(), str(), list(), tuple(), dict(),
+                ModelInTestDB()]
+        test_attribute(attr, allowed, not_allowed)
+
+        attr = db.FloatAttribute()
+        allowed = [None, float()]
+        not_allowed = [bool(), int(), str(), list(), tuple(), dict(),
+                ModelInTestDB()]
+        test_attribute(attr, allowed, not_allowed)
+
+        attr = db.StringAttribute()
+        allowed = [None, str()]
+        not_allowed = [bool(), int(), float(), list(), tuple(), dict(),
+                ModelInTestDB()]
+        test_attribute(attr, allowed, not_allowed)
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):

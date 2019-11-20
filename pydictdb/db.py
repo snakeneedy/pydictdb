@@ -21,6 +21,30 @@ class GenericAttribute(Attribute):
     _allowed_classes = (bool, int, type(None), float, str)
 
 
+class BooleanAttribute(Attribute):
+    _allowed_classes = (bool, type(None))
+
+
+class IntegerAttribute(Attribute):
+    _allowed_classes = (int, type(None))
+
+    @classmethod
+    def _check_value_class(cls, value):
+        # FIXME: isinstance(bool(), int) returns True
+        if isinstance(value, bool):
+            raise TypeError("value type 'bool' is not allowed")
+
+        super()._check_value_class(value)
+
+
+class FloatAttribute(Attribute):
+    _allowed_classes = (type(None), float)
+
+
+class StringAttribute(Attribute):
+    _allowed_classes = (type(None), str)
+
+
 class BaseObject(object):
     def __init__(self, **kwargs):
         for kw in kwargs:

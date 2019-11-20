@@ -14,10 +14,10 @@ class AttributeTestCase(unittest.TestCase):
     def test_check_value_class(self):
         def test_attribute(attr, allowed, not_allowed):
             for value in allowed:
-                attr._check_value_class(value)
+                attr.check_value_class(value)
             for value in not_allowed:
                 with self.assertRaises(TypeError):
-                    attr._check_value_class(value)
+                    attr.check_value_class(value)
 
         attr = db.GenericAttribute()
         allowed = [bool(), int(), None, float(), str()]
@@ -64,6 +64,26 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(datetime_attr.encode(now), now.strftime(datetime_fmt))
         self.assertIsInstance(datetime_attr.decode(datetime_str),
                 datetime.datetime)
+
+    def test_repeated(self):
+        db.IntegerAttribute(repeated=True, default=[])
+        db.IntegerAttribute(repeated=True, default=[1, 2]) # pass
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=None)
+
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=[1, '2'])
+
+        with self.assertRaises(TypeError):
+            #  TypeError: 'int' object is not iterable
+            db.IntegerAttribute(repeated=True, default=1)
+
+    def test_repeated_encode_decode(self):
+        now = datetime.datetime.now()
+        attr = db.DatetimeAttribute(default=[], repeated=True)
+        now_str = now.strftime(attr.fmt)
+        self.assertEqual(attr.encode([now]), [now_str])
+        self.assertEqual(attr.decode([now_str]), [now])
 
 
 class ModelTestCase(unittest.TestCase):

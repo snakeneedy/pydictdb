@@ -9,28 +9,55 @@ _database_in_use = core.Database()
 class Attribute(object):
     _allowed_classes = (type(None),)
 
-    def __init__(self, default=None, kept=True):
-        self._check_value_class(default)
+    def __init__(self, default=None, repeated=False, kept=True):
+        self.repeated = repeated
+        if repeated and not (
+                isinstance(default, list) or isinstance(default, tuple)):
+            msg = "arg. 'default' should be list or tuple in repeated attribute"
+            raise TypeError(msg)
+
+        if repeated:
+            default = list(default)
+
+        self.check_value_class(default)
         self.default = default
         self.kept = bool(kept)
 
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    @classmethod
-    def _check_value_class(cls, value):
-        for _class in cls._allowed_classes:
+    def _post_check_value_class(self, value):
+        for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
         else:
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
 
-    def decode(self, generic_value):
+    def check_value_class(self, value):
+        if self.repeated:
+            for val in value:
+                self._post_check_value_class(val)
+        else:
+            self._post_check_value_class(value)
+
+    def _post_decode(self, generic_value):
         return generic_value
 
-    def encode(self, value):
+    def decode(self, generic_value):
+        if self.repeated:
+            return [self._post_decode(val) for val in generic_value]
+        else:
+            return self._post_decode(generic_value)
+
+    def _post_encode(self, value):
         return value
+
+    def encode(self, value):
+        if self.repeated:
+            return [self._post_encode(val) for val in value]
+        else:
+            return self._post_encode(value)
 
 
 class GenericAttribute(Attribute):
@@ -44,13 +71,12 @@ class BooleanAttribute(Attribute):
 class IntegerAttribute(Attribute):
     _allowed_classes = (int, type(None))
 
-    @classmethod
-    def _check_value_class(cls, value):
+    def _post_check_value_class(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super()._check_value_class(value)
+        super()._post_check_value_class(value)
 
 
 class FloatAttribute(Attribute):
@@ -69,12 +95,12 @@ class DateAttribute(Attribute):
         super().__init__(**kwargs)
         self.fmt = fmt
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt).date()
 
-    def encode(self, value):
+    def _post_encode(self, value):
         if value is None:
             return None
         return datetime.datetime.strftime(value, self.fmt)
@@ -84,7 +110,7 @@ class DatetimeAttribute(DateAttribute):
     def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
         super().__init__(fmt=fmt, **kwargs)
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt)
@@ -139,7 +165,7 @@ class Model(BaseObject):
         cls_dict = self.__class__.__dict__
         if name in cls_dict and isinstance(cls_dict[name], Attribute):
             try:
-                cls_dict[name]._check_value_class(value)
+                cls_dict[name].check_value_class(value)
             except TypeError:
                 # NOTE: more readable error message
                 msg = "attribute '%s' type '%s' is not allowed" % (

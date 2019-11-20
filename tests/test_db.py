@@ -7,6 +7,24 @@ class ModelInTestDB(db.Model):
     pass
 
 
+class AttributeTestCase(unittest.TestCase):
+    def test_check_value_class(self):
+        attr = db.GenericAttribute()
+        attr._check_value_class(bool())
+        attr._check_value_class(int())
+        attr._check_value_class(None)
+        attr._check_value_class(float())
+        attr._check_value_class(str())
+        with self.assertRaises(TypeError):
+            attr._check_value_class(list())
+        with self.assertRaises(TypeError):
+            attr._check_value_class(tuple())
+        with self.assertRaises(TypeError):
+            attr._check_value_class(dict())
+        with self.assertRaises(TypeError):
+            attr._check_value_class(ModelInTestDB())
+
+
 class ModelTestCase(unittest.TestCase):
     def test_put(self):
         model = ModelInTestDB(name='Sam', score=90)

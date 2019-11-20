@@ -4,6 +4,23 @@ from . import core
 _database_in_use = core.Database()
 
 
+class Attribute(object):
+    _allowed_classes = tuple()
+
+    @classmethod
+    def _check_value_class(cls, value):
+        for _class in cls._allowed_classes:
+            if isinstance(value, _class):
+                break
+        else:
+            msg = "value type '%s' is not allowed" % type(value).__name__
+            raise TypeError(msg)
+
+
+class GenericAttribute(Attribute):
+    _allowed_classes = (bool, int, type(None), float, str)
+
+
 class BaseObject(object):
     def __init__(self, **kwargs):
         for kw in kwargs:

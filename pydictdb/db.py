@@ -17,9 +17,8 @@ class Attribute(object):
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    @classmethod
-    def _check_value_class(cls, value):
-        for _class in cls._allowed_classes:
+    def _check_value_class(self, value):
+        for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
         else:
@@ -44,8 +43,7 @@ class BooleanAttribute(Attribute):
 class IntegerAttribute(Attribute):
     _allowed_classes = (int, type(None))
 
-    @classmethod
-    def _check_value_class(cls, value):
+    def _check_value_class(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")

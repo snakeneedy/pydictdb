@@ -159,6 +159,12 @@ class BaseObject(object):
 class Model(BaseObject):
     def __init__(self, **kwargs):
         self.key = kwargs.pop('key', None)
+        # set default value from Attribute
+        attributes = self._get_cls_attributes(only_kept=False)
+        for name, attr in attributes.items():
+            if name not in kwargs:
+                kwargs[name] = attr.get_default()
+
         super().__init__(**kwargs)
 
     def __setattr__(self, name, value):

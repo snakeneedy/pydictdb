@@ -68,6 +68,19 @@ class ModelTestCase(unittest.TestCase):
         # pass on not-set attribute
         ModelInTestDB(height='180.0')
 
+    def test_only_kept_attr(self):
+        class ModelInTestCase(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute(kept=False)
+
+        model = ModelInTestCase(name='Sam', score=100)
+        key = model.put()
+        self.assertTrue('score' in model.to_dict())
+        self.assertFalse('score' in key.get().to_dict())
+
+        # non-kept attribute still check type
+        with self.assertRaises(TypeError):
+            ModelInTestCase(name='Sam', score='100')
 
 class KeyTestCase(unittest.TestCase):
     def test_get_class(self):

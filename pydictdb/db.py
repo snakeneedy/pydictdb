@@ -7,6 +7,9 @@ _database_in_use = core.Database()
 class Attribute(object):
     _allowed_classes = tuple()
 
+    def __init__(self, kept=True):
+        self.kept = bool(kept)
+
     @classmethod
     def _check_value_class(cls, value):
         for _class in cls._allowed_classes:
@@ -104,9 +107,14 @@ class Model(BaseObject):
         return super().__setattr__(name, value)
 
     def put(self):
-        kind = self.__class__.__name__
+        cls = self.__class__
+        kind = cls.__name__
         table = _database_in_use.table(kind)
-        obj = self.to_dict(exclude=('key',))
+        cls_dict = cls.__dict__
+        # NOTE: only put kept attributes to database
+        attributes = {name: attr for name, attr in cls_dict.items()
+                if isinstance(attr, Attribute) and attr.kept}
+        obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
         if self.key:
             table.update_or_insert(self.key.object_id, obj)
         else:

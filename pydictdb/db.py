@@ -57,6 +57,33 @@ class Model(BaseObject):
 
 
 class Key(BaseObject):
+    _classes_dict = {}
+
     def __init__(self, kind, object_id):
         self.kind = kind
         self.object_id = object_id
+
+    @classmethod
+    def _get_class(cls, kind):
+        if kind not in cls._classes_dict:
+            # refresh _classes_dict
+            cls._classes_dict['Model'] = Model
+            queue = [Model]
+            while queue:
+                parent = queue.pop(0)
+                for child in parent.__subclasses__():
+                    if child.__name__ not in cls._classes_dict:
+                        cls._classes_dict[child.__name__] = child
+                        queue.append(child)
+
+        _class = cls._classes_dict.get(kind, None)
+        is_TypeError = False
+        try:
+            is_TypeError = not issubclass(_class, Model)
+        except TypeError:
+            is_TypeError = True
+
+        if is_TypeError:
+            raise TypeError("invalid kind '%s'" % kind)
+
+        return _class

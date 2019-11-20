@@ -163,3 +163,28 @@ class KeyTestCase(unittest.TestCase):
         self.assertIsNotNone(key.get())
         key.delete()
         self.assertIsNone(key.get())
+
+
+class FunctionTestCase(unittest.TestCase):
+    def test_multi(self):
+        class ModelInTestCase02(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute()
+
+        models = [
+            ModelInTestCase02(name='Sam', score=100),
+            ModelInTestCase02(name='Tom', score=90),
+            ModelInTestCase02(name='John', score=80),
+        ]
+        keys = db.put_multi(models)
+        for key, model in zip(keys, models):
+            self.assertEqual(key.get(), model)
+
+        self.assertEqual(db.get_multi(keys), models)
+
+        db.delete_multi(keys)
+        for key in keys:
+            self.assertIsNone(key.get())
+
+        # pass
+        db.delete_multi(keys)

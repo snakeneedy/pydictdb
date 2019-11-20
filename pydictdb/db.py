@@ -228,3 +228,16 @@ class Key(BaseObject):
     def delete(self):
         table = _database_in_use.table(self.kind)
         table.delete(self.object_id, ignore_exception=True)
+
+
+def put_multi(models):
+    return [model.put() for model in models]
+
+
+def get_multi(keys):
+    return [key.get() for key in keys]
+
+
+def delete_multi(keys):
+    for key in keys:
+        key.delete()

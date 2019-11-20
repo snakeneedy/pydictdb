@@ -9,7 +9,8 @@ _database_in_use = core.Database()
 class Attribute(object):
     _allowed_classes = (type(None),)
 
-    def __init__(self, default=None, kept=True):
+    def __init__(self, default=None, repeated=False, kept=True):
+        self.repeated = repeated
         self._check_value_class(default)
         self.default = default
         self.kept = bool(kept)

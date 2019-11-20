@@ -1,3 +1,4 @@
+import copy
 import datetime
 from . import core
 
@@ -12,6 +13,9 @@ class Attribute(object):
         self._check_value_class(default)
         self.default = default
         self.kept = bool(kept)
+
+    def get_default(self):
+        return copy.deepcopy(self.default)
 
     @classmethod
     def _check_value_class(cls, value):
@@ -143,6 +147,14 @@ class Model(BaseObject):
                 raise TypeError(msg)
 
         return super().__setattr__(name, value)
+
+    def __getattribute__(self, name):
+        value = super().__getattribute__(name)
+        if (isinstance(value, Attribute)
+                and value == getattr(self.__class__, name)):
+            return value.get_default()
+
+        return value
 
     @classmethod
     def _get_kept_attributes(cls):

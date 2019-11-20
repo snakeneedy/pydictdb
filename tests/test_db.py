@@ -100,6 +100,15 @@ class ModelTestCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             ModelInTestCase(name='Sam', score='100')
 
+    def test_attr_default(self):
+        class ModelInTestCase(db.Model):
+            name = db.StringAttribute(default='Sam')
+            score = db.IntegerAttribute(default=100)
+
+        self.assertEqual(ModelInTestCase().name, 'Sam')
+        self.assertEqual(ModelInTestCase().score, 100)
+
+
 class KeyTestCase(unittest.TestCase):
     def test_get_class(self):
         self.assertEqual(db.Key._get_class('ModelInTestDB'), ModelInTestDB)

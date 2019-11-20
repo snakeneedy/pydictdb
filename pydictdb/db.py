@@ -9,6 +9,12 @@ class BaseObject(object):
         for kw in kwargs:
             setattr(self, kw, kwargs[kw])
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return (not self.__eq__(other))
+
     def __repr__(self):
         cls = self.__class__
         cls_str = '%s.%s' % (cls.__module__, cls.__name__)
@@ -87,3 +93,12 @@ class Key(BaseObject):
             raise TypeError("invalid kind '%s'" % kind)
 
         return _class
+
+    def get(self):
+        table = _database_in_use.table(self.kind)
+        obj = table.get(self.object_id)
+        if obj is None:
+            return None
+
+        cls = self._get_class(self.kind)
+        return cls(key=self, **obj)

@@ -21,3 +21,11 @@ class KeyTestCase(unittest.TestCase):
         self.assertEqual(db.Key._get_class('ModelInTestDB'), ModelInTestDB)
         with self.assertRaises(TypeError):
             db.Key._get_class('abcdefghijklmnopqrstuvwxyz')
+
+    def test_get(self):
+        model = ModelInTestDB(name='Sam', score=90)
+        key = model.put()
+        self.assertEqual(model, key.get())
+
+        # Key with invalid object_id get None
+        self.assertIsNone(db.Key('ModelInTestDB', 0).get())

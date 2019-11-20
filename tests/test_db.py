@@ -1,3 +1,4 @@
+import datetime
 import unittest
 
 from pydictdb import db
@@ -45,6 +46,23 @@ class AttributeTestCase(unittest.TestCase):
         not_allowed = [bool(), int(), float(), list(), tuple(), dict(),
                 ModelInTestDB()]
         test_attribute(attr, allowed, not_allowed)
+
+    def test_datetime_attribute(self):
+        # NOTE: issubclass(datetime.datetime, datetime.date) returns True
+        now = datetime.datetime.now()
+        date_fmt = '%Y-%m-%d'
+        date_attr = db.DateAttribute(fmt=date_fmt)
+        date_str = now.strftime(date_fmt)
+        self.assertEqual(date_attr.encode(now), date_str)
+        self.assertIsInstance(date_attr.decode(date_str), datetime.date)
+        self.assertNotIsInstance(date_attr.decode(date_str), datetime.datetime)
+
+        datetime_fmt = '%Y-%m-%d %H:%M:%S.%f'
+        datetime_attr = db.DatetimeAttribute(fmt=datetime_fmt)
+        datetime_str = now.strftime(datetime_fmt)
+        self.assertEqual(datetime_attr.encode(now), now.strftime(datetime_fmt))
+        self.assertIsInstance(datetime_attr.decode(datetime_str),
+                datetime.datetime)
 
 
 class ModelTestCase(unittest.TestCase):

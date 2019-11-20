@@ -1,3 +1,4 @@
+import datetime
 from . import core
 
 
@@ -18,6 +19,12 @@ class Attribute(object):
         else:
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
+
+    def decode(self, generic_value):
+        return generic_value
+
+    def encode(self, value):
+        return value
 
 
 class GenericAttribute(Attribute):
@@ -46,6 +53,35 @@ class FloatAttribute(Attribute):
 
 class StringAttribute(Attribute):
     _allowed_classes = (type(None), str)
+
+
+# NOTE: issubclass(datetime.datetime, datetime.date) returns True
+class DateAttribute(Attribute):
+    _allowed_classes = (type(None), datetime.date)
+
+    def __init__(self, fmt='%Y-%m-%d', **kwargs):
+        super().__init__(**kwargs)
+        self.fmt = fmt
+
+    def decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return datetime.datetime.strptime(generic_value, self.fmt).date()
+
+    def encode(self, value):
+        if value is None:
+            return None
+        return datetime.datetime.strftime(value, self.fmt)
+
+
+class DatetimeAttribute(DateAttribute):
+    def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
+        super().__init__(fmt=fmt, **kwargs)
+
+    def decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return datetime.datetime.strptime(generic_value, self.fmt)
 
 
 class BaseObject(object):

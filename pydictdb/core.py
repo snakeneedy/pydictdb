@@ -4,12 +4,14 @@ from . import storages
 
 
 class Database(object):
-    def __init__(self, storage=storages.MemoryStorage()):
+    def __init__(self, storage=storages.MemoryStorage(), auto_commit=True):
         self.storage = storage
         if storage:
             self._tables = storage.read()
         else:
             self._tables = {}
+
+        self.auto_commit = auto_commit
 
     def commit(self):
         self.storage.write(self._tables)
@@ -18,12 +20,12 @@ class Database(object):
         if kind not in self._tables:
             self._tables[kind] = {}
 
-        table = Table(kind, self._tables[kind])
+        table = Table(kind, self._tables[kind], self)
         return table
 
 
 class Table(object):
-    def __init__(self, kind, dictionary=None):
+    def __init__(self, kind, dictionary=None, database=None):
         self.kind = kind
         if dictionary is None:
             self.dictionary = {}
@@ -31,8 +33,15 @@ class Table(object):
             # bind dictionary to the argument one
             self.dictionary = dictionary
 
+        self.database = database
+
+    def _auto_commit(self):
+        if self.database and self.database.auto_commit:
+            self.database.commit()
+
     def _set_object(self, object_id, obj):
         self.dictionary[object_id] = dict(copy.deepcopy(obj))
+        self._auto_commit()
 
     def _get_object(self, object_id):
         return copy.deepcopy(self.dictionary.get(object_id, None))
@@ -40,6 +49,7 @@ class Table(object):
     def _delete_object(self, object_id):
         try:
             del self.dictionary[object_id]
+            self._auto_commit()
         except KeyError:
             pass
 

@@ -9,28 +9,55 @@ _database_in_use = core.Database()
 class Attribute(object):
     _allowed_classes = (type(None),)
 
-    def __init__(self, default=None, kept=True):
-        self._check_value_class(default)
+    def __init__(self, default=None, repeated=False, kept=True):
+        self.repeated = repeated
+        if repeated and not (
+                isinstance(default, list) or isinstance(default, tuple)):
+            msg = "arg. 'default' should be list or tuple in repeated attribute"
+            raise TypeError(msg)
+
+        if repeated:
+            default = list(default)
+
+        self.check_value_class(default)
         self.default = default
         self.kept = bool(kept)
 
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    @classmethod
-    def _check_value_class(cls, value):
-        for _class in cls._allowed_classes:
+    def _post_check_value_class(self, value):
+        for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
         else:
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
 
-    def decode(self, generic_value):
+    def check_value_class(self, value):
+        if self.repeated:
+            for val in value:
+                self._post_check_value_class(val)
+        else:
+            self._post_check_value_class(value)
+
+    def _post_decode(self, generic_value):
         return generic_value
 
-    def encode(self, value):
+    def decode(self, generic_value):
+        if self.repeated:
+            return [self._post_decode(val) for val in generic_value]
+        else:
+            return self._post_decode(generic_value)
+
+    def _post_encode(self, value):
         return value
+
+    def encode(self, value):
+        if self.repeated:
+            return [self._post_encode(val) for val in value]
+        else:
+            return self._post_encode(value)
 
 
 class GenericAttribute(Attribute):
@@ -44,13 +71,12 @@ class BooleanAttribute(Attribute):
 class IntegerAttribute(Attribute):
     _allowed_classes = (int, type(None))
 
-    @classmethod
-    def _check_value_class(cls, value):
+    def _post_check_value_class(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super()._check_value_class(value)
+        super()._post_check_value_class(value)
 
 
 class FloatAttribute(Attribute):
@@ -69,12 +95,12 @@ class DateAttribute(Attribute):
         super().__init__(**kwargs)
         self.fmt = fmt
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt).date()
 
-    def encode(self, value):
+    def _post_encode(self, value):
         if value is None:
             return None
         return datetime.datetime.strftime(value, self.fmt)
@@ -84,7 +110,7 @@ class DatetimeAttribute(DateAttribute):
     def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
         super().__init__(fmt=fmt, **kwargs)
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt)
@@ -133,13 +159,19 @@ class BaseObject(object):
 class Model(BaseObject):
     def __init__(self, **kwargs):
         self.key = kwargs.pop('key', None)
+        # set default value from Attribute
+        attributes = self._get_cls_attributes(only_kept=False)
+        for name, attr in attributes.items():
+            if name not in kwargs:
+                kwargs[name] = attr.get_default()
+
         super().__init__(**kwargs)
 
     def __setattr__(self, name, value):
         cls_dict = self.__class__.__dict__
         if name in cls_dict and isinstance(cls_dict[name], Attribute):
             try:
-                cls_dict[name]._check_value_class(value)
+                cls_dict[name].check_value_class(value)
             except TypeError:
                 # NOTE: more readable error message
                 msg = "attribute '%s' type '%s' is not allowed" % (
@@ -157,16 +189,16 @@ class Model(BaseObject):
         return value
 
     @classmethod
-    def _get_kept_attributes(cls):
+    def _get_cls_attributes(cls, only_kept=True):
         cls_dict = cls.__dict__
         attributes = {name: attr for name, attr in cls_dict.items()
-                if isinstance(attr, Attribute) and attr.kept}
+                if isinstance(attr, Attribute) and (attr.kept or not only_kept)}
         return attributes
 
     def put(self):
         kind = self.__class__.__name__
         table = _database_in_use.table(kind)
-        attributes = self._get_kept_attributes()
+        attributes = self._get_cls_attributes()
         obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
         for name, attr in attributes.items():
             if name in obj:
@@ -181,6 +213,10 @@ class Model(BaseObject):
             self.key = Key(kind, object_id)
 
         return self.key
+
+    @classmethod
+    def query(cls, test_func=lambda obj: True):
+        return Query(cls.__name__, test_func)
 
 
 class Key(BaseObject):
@@ -216,7 +252,7 @@ class Key(BaseObject):
         if cls is None:
             return None
 
-        attributes = cls._get_kept_attributes()
+        attributes = cls._get_cls_attributes()
         for name, attr in attributes.items():
             if name in obj:
                 obj[name] = attr.decode(obj[name])
@@ -230,6 +266,26 @@ class Key(BaseObject):
         table.delete(self.object_id, ignore_exception=True)
 
 
+# NOTE: different interface from `core.Query`
+class Query(object):
+    def __init__(self, kind, test_func=lambda obj: True):
+        self.kind = kind
+        self.test_func = test_func
+
+    def fetch(self, keys_only=False):
+        table = _database_in_use.table(self.kind)
+        keys = []
+        for object_id in table.dictionary.keys():
+            key = Key(self.kind, object_id)
+            if self.test_func(key.get()):
+                keys.append(key)
+
+        if keys_only:
+            return keys
+
+        return get_multi(keys)
+
+
 def put_multi(models):
     return [model.put() for model in models]
 
@@ -241,3 +297,8 @@ def get_multi(keys):
 def delete_multi(keys):
     for key in keys:
         key.delete()
+
+
+def register_database(database):
+    global _database_in_use
+    _database_in_use = database

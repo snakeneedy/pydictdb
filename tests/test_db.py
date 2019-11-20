@@ -3,6 +3,7 @@ import unittest
 
 from pydictdb import core
 from pydictdb import db
+from pydictdb import storages
 
 
 class ModelInTestDB(db.Model):
@@ -14,10 +15,10 @@ class AttributeTestCase(unittest.TestCase):
     def test_check_value_class(self):
         def test_attribute(attr, allowed, not_allowed):
             for value in allowed:
-                attr._check_value_class(value)
+                attr.check_value_class(value)
             for value in not_allowed:
                 with self.assertRaises(TypeError):
-                    attr._check_value_class(value)
+                    attr.check_value_class(value)
 
         attr = db.GenericAttribute()
         allowed = [bool(), int(), None, float(), str()]
@@ -64,6 +65,26 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(datetime_attr.encode(now), now.strftime(datetime_fmt))
         self.assertIsInstance(datetime_attr.decode(datetime_str),
                 datetime.datetime)
+
+    def test_repeated(self):
+        db.IntegerAttribute(repeated=True, default=[])
+        db.IntegerAttribute(repeated=True, default=[1, 2]) # pass
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=None)
+
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=[1, '2'])
+
+        with self.assertRaises(TypeError):
+            #  TypeError: 'int' object is not iterable
+            db.IntegerAttribute(repeated=True, default=1)
+
+    def test_repeated_encode_decode(self):
+        now = datetime.datetime.now()
+        attr = db.DatetimeAttribute(default=[], repeated=True)
+        now_str = now.strftime(attr.fmt)
+        self.assertEqual(attr.encode([now]), [now_str])
+        self.assertEqual(attr.decode([now_str]), [now])
 
 
 class ModelTestCase(unittest.TestCase):
@@ -122,6 +143,31 @@ class ModelTestCase(unittest.TestCase):
         obj = db._database_in_use._tables['ModelInTestCase01'][key.object_id]
         self.assertEqual(obj['birth'], '2009-01-01')
         self.assertEqual(obj['created_at'], '2019-01-01 13:10:30.000000')
+
+    def test_query(self):
+        class ModelInTestCase03(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute(default=0)
+            birth = db.DateAttribute()
+
+        db.delete_multi(ModelInTestCase03.query().fetch(keys_only=True))
+        models = [
+            ModelInTestCase03(name='Sam', score=90,
+                    birth=datetime.date(2009, 1, 1)),
+            ModelInTestCase03(name='Tom', score=80,
+                    birth=datetime.date(2010, 1, 1)),
+            ModelInTestCase03(name='John', score=70,
+                    birth=datetime.date(2011, 1, 1)),
+        ]
+        db.put_multi(models)
+        self.assertEqual(models, ModelInTestCase03.query().fetch())
+
+        query = ModelInTestCase03.query(lambda m: m.score >= 80)
+        self.assertEqual(models[:2], query.fetch())
+
+        query = ModelInTestCase03.query(
+                lambda m: m.birth >= datetime.date(2010, 1, 1))
+        self.assertEqual(models[1:], query.fetch())
 
 
 class KeyTestCase(unittest.TestCase):
@@ -188,3 +234,24 @@ class FunctionTestCase(unittest.TestCase):
 
         # pass
         db.delete_multi(keys)
+
+    def test_register_database(self):
+        class ModelInTestCase04(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute()
+
+        objects = [
+            {'name': 'Sam', 'score': 90},
+            {'name': 'Tom', 'score': 80},
+            {'name': 'John', 'score': 70},
+        ]
+        database_1 = core.Database(storage=storages.MemoryStorage())
+        database_2 = core.Database(storage=storages.MemoryStorage())
+
+        db.register_database(database_1)
+        models = [ModelInTestCase04(**obj) for obj in objects]
+        keys = db.put_multi(models)
+        self.assertEqual(db.get_multi(keys), models)
+
+        db.register_database(database_2)
+        self.assertEqual(db.get_multi(keys), [None] * len(keys))

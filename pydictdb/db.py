@@ -11,6 +11,14 @@ class Attribute(object):
 
     def __init__(self, default=None, repeated=False, kept=True):
         self.repeated = repeated
+        if repeated and not (
+                isinstance(default, list) or isinstance(default, tuple)):
+            msg = "arg. 'default' should be list or tuple in repeated attribute"
+            raise TypeError(msg)
+
+        if repeated:
+            default = list(default)
+
         self._check_value_class(default)
         self.default = default
         self.kept = bool(kept)
@@ -19,12 +27,19 @@ class Attribute(object):
         return copy.deepcopy(self.default)
 
     def _check_value_class(self, value):
-        for _class in self._allowed_classes:
-            if isinstance(value, _class):
-                break
+        def check_one(value):
+            for _class in self._allowed_classes:
+                if isinstance(value, _class):
+                    break
+            else:
+                msg = "value type '%s' is not allowed" % type(value).__name__
+                raise TypeError(msg)
+
+        if self.repeated:
+            for val in value:
+                check_one(val)
         else:
-            msg = "value type '%s' is not allowed" % type(value).__name__
-            raise TypeError(msg)
+            check_one(value)
 
     def decode(self, generic_value):
         return generic_value

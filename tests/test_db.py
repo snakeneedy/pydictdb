@@ -65,6 +65,19 @@ class AttributeTestCase(unittest.TestCase):
         self.assertIsInstance(datetime_attr.decode(datetime_str),
                 datetime.datetime)
 
+    def test_repeated(self):
+        db.IntegerAttribute(repeated=True, default=[])
+        db.IntegerAttribute(repeated=True, default=[1, 2]) # pass
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=None)
+
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(repeated=True, default=[1, '2'])
+
+        with self.assertRaises(TypeError):
+            #  TypeError: 'int' object is not iterable
+            db.IntegerAttribute(repeated=True, default=1)
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):

@@ -1,5 +1,7 @@
+import datetime
 import unittest
 
+from pydictdb import core
 from pydictdb import db
 
 
@@ -46,6 +48,23 @@ class AttributeTestCase(unittest.TestCase):
                 ModelInTestDB()]
         test_attribute(attr, allowed, not_allowed)
 
+    def test_datetime_attribute(self):
+        # NOTE: issubclass(datetime.datetime, datetime.date) returns True
+        now = datetime.datetime.now()
+        date_fmt = '%Y-%m-%d'
+        date_attr = db.DateAttribute(fmt=date_fmt)
+        date_str = now.strftime(date_fmt)
+        self.assertEqual(date_attr.encode(now), date_str)
+        self.assertIsInstance(date_attr.decode(date_str), datetime.date)
+        self.assertNotIsInstance(date_attr.decode(date_str), datetime.datetime)
+
+        datetime_fmt = '%Y-%m-%d %H:%M:%S.%f'
+        datetime_attr = db.DatetimeAttribute(fmt=datetime_fmt)
+        datetime_str = now.strftime(datetime_fmt)
+        self.assertEqual(datetime_attr.encode(now), now.strftime(datetime_fmt))
+        self.assertIsInstance(datetime_attr.decode(datetime_str),
+                datetime.datetime)
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):
@@ -76,11 +95,34 @@ class ModelTestCase(unittest.TestCase):
         model = ModelInTestCase(name='Sam', score=100)
         key = model.put()
         self.assertTrue('score' in model.to_dict())
-        self.assertFalse('score' in key.get().to_dict())
+        self.assertFalse('score' in
+                db._database_in_use._tables['ModelInTestCase'][key.object_id])
 
         # non-kept attribute still check type
         with self.assertRaises(TypeError):
             ModelInTestCase(name='Sam', score='100')
+
+    def test_attr_default(self):
+        class ModelInTestCase(db.Model):
+            name = db.StringAttribute(default='Sam')
+            score = db.IntegerAttribute(default=100)
+
+        self.assertEqual(ModelInTestCase().name, 'Sam')
+        self.assertEqual(ModelInTestCase().score, 100)
+
+    def test_encode_when_put(self):
+        class ModelInTestCase01(db.Model):
+            birth = db.DateAttribute()
+            created_at = db.DatetimeAttribute()
+
+        birth = datetime.date(2009, 1, 1)
+        created_at = datetime.datetime(2019, 1, 1, 13, 10, 30)
+        model = ModelInTestCase01(birth=birth, created_at=created_at)
+        key = model.put()
+        obj = db._database_in_use._tables['ModelInTestCase01'][key.object_id]
+        self.assertEqual(obj['birth'], '2009-01-01')
+        self.assertEqual(obj['created_at'], '2019-01-01 13:10:30.000000')
+
 
 class KeyTestCase(unittest.TestCase):
     def test_get_class(self):
@@ -96,3 +138,18 @@ class KeyTestCase(unittest.TestCase):
         self.assertIsNone(db.Key('ModelInTestDB', 0).get())
 
         self.assertIsNone(db.Key('abcdefghijklmnopqrstuvwxyz', 0).get())
+
+    def test_decode_when_get(self):
+        class ModelInTestCase01(db.Model):
+            birth = db.DateAttribute()
+            created_at = db.DatetimeAttribute()
+
+        birth = datetime.date(2009, 1, 1)
+        created_at = datetime.datetime(2019, 1, 1, 13, 10, 30)
+        object_id = core.Table._next_id()
+        db._database_in_use.table('ModelInTestCase01').dictionary[object_id] = {
+            'birth': '2009-01-01', 'created_at': '2019-01-01 13:10:30.000000',
+        }
+        key = db.Key('ModelInTestCase01', object_id)
+        self.assertEqual(key.get().birth, birth)
+        self.assertEqual(key.get().created_at, created_at)

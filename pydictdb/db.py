@@ -1,3 +1,5 @@
+import copy
+import datetime
 from . import core
 
 
@@ -5,10 +7,15 @@ _database_in_use = core.Database()
 
 
 class Attribute(object):
-    _allowed_classes = tuple()
+    _allowed_classes = (type(None),)
 
-    def __init__(self, kept=True):
+    def __init__(self, default=None, kept=True):
+        self._check_value_class(default)
+        self.default = default
         self.kept = bool(kept)
+
+    def get_default(self):
+        return copy.deepcopy(self.default)
 
     @classmethod
     def _check_value_class(cls, value):
@@ -18,6 +25,12 @@ class Attribute(object):
         else:
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
+
+    def decode(self, generic_value):
+        return generic_value
+
+    def encode(self, value):
+        return value
 
 
 class GenericAttribute(Attribute):
@@ -46,6 +59,35 @@ class FloatAttribute(Attribute):
 
 class StringAttribute(Attribute):
     _allowed_classes = (type(None), str)
+
+
+# NOTE: issubclass(datetime.datetime, datetime.date) returns True
+class DateAttribute(Attribute):
+    _allowed_classes = (type(None), datetime.date)
+
+    def __init__(self, fmt='%Y-%m-%d', **kwargs):
+        super().__init__(**kwargs)
+        self.fmt = fmt
+
+    def decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return datetime.datetime.strptime(generic_value, self.fmt).date()
+
+    def encode(self, value):
+        if value is None:
+            return None
+        return datetime.datetime.strftime(value, self.fmt)
+
+
+class DatetimeAttribute(DateAttribute):
+    def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
+        super().__init__(fmt=fmt, **kwargs)
+
+    def decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return datetime.datetime.strptime(generic_value, self.fmt)
 
 
 class BaseObject(object):
@@ -106,15 +148,32 @@ class Model(BaseObject):
 
         return super().__setattr__(name, value)
 
-    def put(self):
-        cls = self.__class__
-        kind = cls.__name__
-        table = _database_in_use.table(kind)
+    def __getattribute__(self, name):
+        value = super().__getattribute__(name)
+        if (isinstance(value, Attribute)
+                and value == getattr(self.__class__, name)):
+            return value.get_default()
+
+        return value
+
+    @classmethod
+    def _get_kept_attributes(cls):
         cls_dict = cls.__dict__
-        # NOTE: only put kept attributes to database
         attributes = {name: attr for name, attr in cls_dict.items()
                 if isinstance(attr, Attribute) and attr.kept}
+        return attributes
+
+    def put(self):
+        kind = self.__class__.__name__
+        table = _database_in_use.table(kind)
+        attributes = self._get_kept_attributes()
         obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
+        for name, attr in attributes.items():
+            if name in obj:
+                obj[name] = attr.encode(obj[name])
+            else:
+                obj[name] = attr.get_default()
+
         if self.key:
             table.update_or_insert(self.key.object_id, obj)
         else:
@@ -156,5 +215,12 @@ class Key(BaseObject):
         cls = self._get_class(self.kind)
         if cls is None:
             return None
+
+        attributes = cls._get_kept_attributes()
+        for name, attr in attributes.items():
+            if name in obj:
+                obj[name] = attr.decode(obj[name])
+            else:
+                obj[name] = attr.get_default()
 
         return cls(key=self, **obj)

@@ -9,20 +9,17 @@ class ModelInTestDB(db.Model):
 
 class AttributeTestCase(unittest.TestCase):
     def test_check_value_class(self):
+        def test_attribute(attr, allowed, not_allowed):
+            for value in allowed:
+                attr._check_value_class(value)
+            for value in not_allowed:
+                with self.assertRaises(TypeError):
+                    attr._check_value_class(value)
+
         attr = db.GenericAttribute()
-        attr._check_value_class(bool())
-        attr._check_value_class(int())
-        attr._check_value_class(None)
-        attr._check_value_class(float())
-        attr._check_value_class(str())
-        with self.assertRaises(TypeError):
-            attr._check_value_class(list())
-        with self.assertRaises(TypeError):
-            attr._check_value_class(tuple())
-        with self.assertRaises(TypeError):
-            attr._check_value_class(dict())
-        with self.assertRaises(TypeError):
-            attr._check_value_class(ModelInTestDB())
+        allowed = [bool(), int(), None, float(), str()]
+        not_allowed = [list(), tuple(), dict(), ModelInTestDB()]
+        test_attribute(attr, allowed, not_allowed)
 
 
 class ModelTestCase(unittest.TestCase):

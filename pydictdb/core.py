@@ -97,8 +97,10 @@ class Table(object):
 
         return object_ids
 
-    def delete(self, object_id):
-        self._check_id(object_id)
+    def delete(self, object_id, ignore_exception=False):
+        if not ignore_exception:
+            self._check_id(object_id)
+
         self._delete_object(object_id)
 
     def delete_multi(self, object_ids):

@@ -224,3 +224,7 @@ class Key(BaseObject):
                 obj[name] = attr.get_default()
 
         return cls(key=self, **obj)
+
+    def delete(self):
+        table = _database_in_use.table(self.kind)
+        table.delete(self.object_id, ignore_exception=True)

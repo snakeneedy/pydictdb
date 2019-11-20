@@ -153,3 +153,13 @@ class KeyTestCase(unittest.TestCase):
         key = db.Key('ModelInTestCase01', object_id)
         self.assertEqual(key.get().birth, birth)
         self.assertEqual(key.get().created_at, created_at)
+
+    def test_delete(self):
+        class ModelInTestCase01(db.Model):
+            pass
+
+        model = ModelInTestCase01()
+        key = model.put()
+        self.assertIsNotNone(key.get())
+        key.delete()
+        self.assertIsNone(key.get())

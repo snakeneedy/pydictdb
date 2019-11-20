@@ -142,14 +142,17 @@ class Model(BaseObject):
 
         return super().__setattr__(name, value)
 
-    def put(self):
-        cls = self.__class__
-        kind = cls.__name__
-        table = _database_in_use.table(kind)
+    @classmethod
+    def _get_kept_attributes(cls):
         cls_dict = cls.__dict__
-        # NOTE: only put kept attributes to database
         attributes = {name: attr for name, attr in cls_dict.items()
                 if isinstance(attr, Attribute) and attr.kept}
+        return attributes
+
+    def put(self):
+        kind = self.__class__.__name__
+        table = _database_in_use.table(kind)
+        attributes = self._get_kept_attributes()
         obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
         if self.key:
             table.update_or_insert(self.key.object_id, obj)

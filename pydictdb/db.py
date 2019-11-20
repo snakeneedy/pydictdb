@@ -41,11 +41,23 @@ class Attribute(object):
         else:
             self._post_check_value_class(value)
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         return generic_value
 
-    def encode(self, value):
+    def decode(self, generic_value):
+        if self.repeated:
+            return [self._post_decode(val) for val in generic_value]
+        else:
+            return self._post_decode(generic_value)
+
+    def _post_encode(self, value):
         return value
+
+    def encode(self, value):
+        if self.repeated:
+            return [self._post_encode(val) for val in value]
+        else:
+            return self._post_encode(value)
 
 
 class GenericAttribute(Attribute):
@@ -83,12 +95,12 @@ class DateAttribute(Attribute):
         super().__init__(**kwargs)
         self.fmt = fmt
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt).date()
 
-    def encode(self, value):
+    def _post_encode(self, value):
         if value is None:
             return None
         return datetime.datetime.strftime(value, self.fmt)
@@ -98,7 +110,7 @@ class DatetimeAttribute(DateAttribute):
     def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
         super().__init__(fmt=fmt, **kwargs)
 
-    def decode(self, generic_value):
+    def _post_decode(self, generic_value):
         if generic_value is None:
             return None
         return datetime.datetime.strptime(generic_value, self.fmt)

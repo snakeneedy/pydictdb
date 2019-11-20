@@ -78,6 +78,13 @@ class AttributeTestCase(unittest.TestCase):
             #  TypeError: 'int' object is not iterable
             db.IntegerAttribute(repeated=True, default=1)
 
+    def test_repeated_encode_decode(self):
+        now = datetime.datetime.now()
+        attr = db.DatetimeAttribute(default=[], repeated=True)
+        now_str = now.strftime(attr.fmt)
+        self.assertEqual(attr.encode([now]), [now_str])
+        self.assertEqual(attr.decode([now_str]), [now])
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):

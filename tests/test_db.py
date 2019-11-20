@@ -3,6 +3,7 @@ import unittest
 
 from pydictdb import core
 from pydictdb import db
+from pydictdb import storages
 
 
 class ModelInTestDB(db.Model):
@@ -233,3 +234,24 @@ class FunctionTestCase(unittest.TestCase):
 
         # pass
         db.delete_multi(keys)
+
+    def test_register_database(self):
+        class ModelInTestCase04(db.Model):
+            name = db.StringAttribute()
+            score = db.IntegerAttribute()
+
+        objects = [
+            {'name': 'Sam', 'score': 90},
+            {'name': 'Tom', 'score': 80},
+            {'name': 'John', 'score': 70},
+        ]
+        database_1 = core.Database(storage=storages.MemoryStorage())
+        database_2 = core.Database(storage=storages.MemoryStorage())
+
+        db.register_database(database_1)
+        models = [ModelInTestCase04(**obj) for obj in objects]
+        keys = db.put_multi(models)
+        self.assertEqual(db.get_multi(keys), models)
+
+        db.register_database(database_2)
+        self.assertEqual(db.get_multi(keys), [None] * len(keys))

@@ -297,3 +297,8 @@ def get_multi(keys):
 def delete_multi(keys):
     for key in keys:
         key.delete()
+
+
+def register_database(database):
+    global _database_in_use
+    _database_in_use = database

@@ -159,6 +159,12 @@ class BaseObject(object):
 class Model(BaseObject):
     def __init__(self, **kwargs):
         self.key = kwargs.pop('key', None)
+        # set default value from Attribute
+        attributes = self._get_cls_attributes(only_kept=False)
+        for name, attr in attributes.items():
+            if name not in kwargs:
+                kwargs[name] = attr.get_default()
+
         super().__init__(**kwargs)
 
     def __setattr__(self, name, value):
@@ -183,16 +189,16 @@ class Model(BaseObject):
         return value
 
     @classmethod
-    def _get_kept_attributes(cls):
+    def _get_cls_attributes(cls, only_kept=True):
         cls_dict = cls.__dict__
         attributes = {name: attr for name, attr in cls_dict.items()
-                if isinstance(attr, Attribute) and attr.kept}
+                if isinstance(attr, Attribute) and (attr.kept or not only_kept)}
         return attributes
 
     def put(self):
         kind = self.__class__.__name__
         table = _database_in_use.table(kind)
-        attributes = self._get_kept_attributes()
+        attributes = self._get_cls_attributes()
         obj = self.to_dict(include=tuple(attributes.keys()), exclude=('key',))
         for name, attr in attributes.items():
             if name in obj:
@@ -246,7 +252,7 @@ class Key(BaseObject):
         if cls is None:
             return None
 
-        attributes = cls._get_kept_attributes()
+        attributes = cls._get_cls_attributes()
         for name, attr in attributes.items():
             if name in obj:
                 obj[name] = attr.decode(obj[name])

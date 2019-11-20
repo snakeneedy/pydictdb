@@ -131,7 +131,10 @@ class JsonStorage(FileStorage):
         Returns:
             (dict) -- The decoded data.
         """
-        return json.loads(content)
+        if content:
+            return json.loads(content)
+
+        return {}
 
     @classmethod
     def encode(cls, data):

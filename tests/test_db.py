@@ -67,11 +67,9 @@ class AttributeTestCase(unittest.TestCase):
                 datetime.datetime)
 
     def test_repeated(self):
+        db.IntegerAttribute(repeated=True, default=None)
         db.IntegerAttribute(repeated=True, default=[])
         db.IntegerAttribute(repeated=True, default=[1, 2]) # pass
-        with self.assertRaises(TypeError):
-            db.IntegerAttribute(repeated=True, default=None)
-
         with self.assertRaises(TypeError):
             db.IntegerAttribute(repeated=True, default=[1, '2'])
 
@@ -109,7 +107,7 @@ class AttributeTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             attr._do_validate_value(db.Key('Group', 0))
 
-        attr = db.KeyAttribute(kind='User', default=[], repeated=True)
+        attr = db.KeyAttribute(kind='User', repeated=True)
         attr._do_validate_value([db.Key('User', 0), db.Key('User', 1)])
         with self.assertRaises(ValueError):
             attr._do_validate_value([db.Key('User', 0), db.Key('Group', 1)])

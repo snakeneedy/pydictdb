@@ -11,6 +11,10 @@ class Attribute(object):
 
     def __init__(self, choices=None, default=None, repeated=False, kept=True):
         self.repeated = repeated
+        # FIXME: prevent unneeded error when default is not provided if repeated
+        if repeated and default is None:
+            default = []
+
         if repeated and not (
                 isinstance(default, list) or isinstance(default, tuple)):
             msg = "arg. 'default' should be list or tuple in repeated attribute"

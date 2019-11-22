@@ -7,7 +7,7 @@ _database_in_use = core.Database()
 
 
 class Attribute(object):
-    _allowed_classes = (type(None),)
+    _allowed_classes = []
 
     def __init__(self, default=None, repeated=False, kept=True):
         self.repeated = repeated
@@ -27,6 +27,10 @@ class Attribute(object):
         return copy.deepcopy(self.default)
 
     def validate_value(self, value):
+        # NOTE: always allow None as single value
+        if value is None:
+            return
+
         for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
@@ -61,15 +65,15 @@ class Attribute(object):
 
 
 class GenericAttribute(Attribute):
-    _allowed_classes = (bool, int, type(None), float, str)
+    _allowed_classes = [bool, int, float, str]
 
 
 class BooleanAttribute(Attribute):
-    _allowed_classes = (bool, type(None))
+    _allowed_classes = [bool]
 
 
 class IntegerAttribute(Attribute):
-    _allowed_classes = (int, type(None))
+    _allowed_classes = [int]
 
     def validate_value(self, value):
         # FIXME: isinstance(bool(), int) returns True
@@ -80,16 +84,16 @@ class IntegerAttribute(Attribute):
 
 
 class FloatAttribute(Attribute):
-    _allowed_classes = (type(None), float)
+    _allowed_classes = [float]
 
 
 class StringAttribute(Attribute):
-    _allowed_classes = (type(None), str)
+    _allowed_classes = [str]
 
 
 # NOTE: issubclass(datetime.datetime, datetime.date) returns True
 class DateAttribute(Attribute):
-    _allowed_classes = (type(None), datetime.date)
+    _allowed_classes = [datetime.date]
 
     def __init__(self, fmt='%Y-%m-%d', **kwargs):
         super().__init__(**kwargs)

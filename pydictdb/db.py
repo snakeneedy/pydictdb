@@ -304,6 +304,17 @@ class KeyAttribute(DateAttribute):
             raise ValueError("key kind must be '{}', but '{}'".format(
                     self.kind, value.kind))
 
+    def _post_decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return Key(kind=generic_value.get('kind', None),
+                object_id=generic_value.get('object_id', None))
+
+    def _post_encode(self, value):
+        if value is None:
+            return None
+        return {'kind': value.kind, 'object_id': value.object_id}
+
 
 # NOTE: different interface from `core.Query`
 class Query(object):

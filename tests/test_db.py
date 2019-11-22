@@ -12,13 +12,13 @@ class ModelInTestDB(db.Model):
 
 
 class AttributeTestCase(unittest.TestCase):
-    def test_check_value_class(self):
+    def test_validate_value(self):
         def test_attribute(attr, allowed, not_allowed):
             for value in allowed:
-                attr.check_value_class(value)
+                attr._do_validate_value(value)
             for value in not_allowed:
                 with self.assertRaises(TypeError):
-                    attr.check_value_class(value)
+                    attr._do_validate_value(value)
 
         attr = db.GenericAttribute()
         allowed = [bool(), int(), None, float(), str()]

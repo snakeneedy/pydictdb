@@ -19,14 +19,14 @@ class Attribute(object):
         if repeated:
             default = list(default)
 
-        self.check_value_class(default)
+        self._do_validate_value(default)
         self.default = default
         self.kept = bool(kept)
 
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    def _post_check_value_class(self, value):
+    def validate_value(self, value):
         for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
@@ -34,12 +34,12 @@ class Attribute(object):
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
 
-    def check_value_class(self, value):
+    def _do_validate_value(self, value):
         if self.repeated:
             for val in value:
-                self._post_check_value_class(val)
+                self.validate_value(val)
         else:
-            self._post_check_value_class(value)
+            self.validate_value(value)
 
     def _post_decode(self, generic_value):
         return generic_value
@@ -71,12 +71,12 @@ class BooleanAttribute(Attribute):
 class IntegerAttribute(Attribute):
     _allowed_classes = (int, type(None))
 
-    def _post_check_value_class(self, value):
+    def validate_value(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super()._post_check_value_class(value)
+        super().validate_value(value)
 
 
 class FloatAttribute(Attribute):
@@ -171,7 +171,7 @@ class Model(BaseObject):
         cls_dict = self.__class__.__dict__
         if name in cls_dict and isinstance(cls_dict[name], Attribute):
             try:
-                cls_dict[name].check_value_class(value)
+                cls_dict[name]._do_validate_value(value)
             except TypeError:
                 # NOTE: more readable error message
                 msg = "attribute '%s' type '%s' is not allowed" % (

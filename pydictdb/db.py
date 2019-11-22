@@ -9,7 +9,7 @@ _database_in_use = core.Database()
 class Attribute(object):
     _allowed_classes = []
 
-    def __init__(self, default=None, repeated=False, kept=True):
+    def __init__(self, choices=None, default=None, repeated=False, kept=True):
         self.repeated = repeated
         if repeated and not (
                 isinstance(default, list) or isinstance(default, tuple)):
@@ -19,6 +19,10 @@ class Attribute(object):
         if repeated:
             default = list(default)
 
+        if choices is not None:
+            choices = list(choices)
+
+        self.choices = choices
         self._do_validate_value(default)
         self.default = default
         self.kept = bool(kept)

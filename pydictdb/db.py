@@ -11,6 +11,10 @@ class Attribute(object):
 
     def __init__(self, choices=None, default=None, repeated=False, kept=True):
         self.repeated = repeated
+        # FIXME: prevent unneeded error when default is not provided if repeated
+        if repeated and default is None:
+            default = []
+
         if repeated and not (
                 isinstance(default, list) or isinstance(default, tuple)):
             msg = "arg. 'default' should be list or tuple in repeated attribute"
@@ -281,6 +285,35 @@ class Key(BaseObject):
     def delete(self):
         table = _database_in_use.table(self.kind)
         table.delete(self.object_id, ignore_exception=True)
+
+
+class KeyAttribute(DateAttribute):
+    _allowed_classes = [Key]
+
+    def __init__(self, kind=None, **kwargs):
+        super().__init__(**kwargs)
+        self.kind = kind
+
+    def validate_value(self, value):
+        # NOTE: always allow None as single value
+        if value is None:
+            return
+
+        super().validate_value(value)
+        if getattr(self, 'kind', None) and value.kind != self.kind:
+            raise ValueError("key kind must be '{}', but '{}'".format(
+                    self.kind, value.kind))
+
+    def _post_decode(self, generic_value):
+        if generic_value is None:
+            return None
+        return Key(kind=generic_value.get('kind', None),
+                object_id=generic_value.get('object_id', None))
+
+    def _post_encode(self, value):
+        if value is None:
+            return None
+        return {'kind': value.kind, 'object_id': value.object_id}
 
 
 # NOTE: different interface from `core.Query`

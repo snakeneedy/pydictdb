@@ -66,6 +66,8 @@ class FileStorageTestCase(unittest.TestCase):
 class JsonStorageTestCase(unittest.TestCase):
     def setUp(self):
         self.path = os.path.abspath('.storage')
+        with open(self.path, 'w'):
+            pass
         self.data = {'name': 'Sam'}
         self.content = r'{"name": "Sam"}'
 
@@ -92,3 +94,84 @@ class JsonStorageTestCase(unittest.TestCase):
         fp = open(self.path, 'r')
         self.assertEqual(fp.read(), self.content)
         fp.close()
+
+    def test_db_KeyAttribute(self):
+        import json
+        from pydictdb import core
+        from pydictdb import db
+
+        class test_db_KeyAttribute_Group(db.Model):
+            name = db.StringAttribute()
+
+        class test_db_KeyAttribute_User(db.Model):
+            name = db.StringAttribute()
+            group_key = db.KeyAttribute(kind='test_db_KeyAttribute_Group')
+
+        db.register_database(
+                core.Database(storage=storages.JsonStorage(self.path)))
+        group = test_db_KeyAttribute_Group(name='test')
+        group.put()
+        user = test_db_KeyAttribute_User(name='Sam', group_key=group.key)
+        user.put()
+        fp = open(self.path, 'r')
+        content = fp.read()
+        fp.close()
+        self.assertEqual(json.loads(content), {
+            'test_db_KeyAttribute_Group': {
+                group.key.object_id: {'name': group.name},
+            },
+            'test_db_KeyAttribute_User': {
+                user.key.object_id: {
+                    'name': user.name,
+                    'group_key': {
+                        'kind': 'test_db_KeyAttribute_Group',
+                        'object_id': group.key.object_id,
+                    },
+                },
+            },
+        })
+
+    def test_db_KeyAttribute_multi(self):
+        import json
+        from pydictdb import core
+        from pydictdb import db
+
+        class test_db_KeyAttribute_multi_User(db.Model):
+            name = db.StringAttribute()
+
+        class test_db_KeyAttribute_multi_Group(db.Model):
+            name = db.StringAttribute()
+            user_keys = db.KeyAttribute(
+                    kind='test_db_KeyAttribute_multi_User', repeated=True)
+
+        db.register_database(
+                core.Database(storage=storages.JsonStorage(self.path)))
+        users = [
+            test_db_KeyAttribute_multi_User(name='Sam'),
+            test_db_KeyAttribute_multi_User(name='Tom'),
+            test_db_KeyAttribute_multi_User(name='John'),
+        ]
+        db.put_multi(users)
+        group = test_db_KeyAttribute_multi_Group(
+                name='test', user_keys=[user.key for user in users])
+        group.put()
+        fp = open(self.path, 'r')
+        content = fp.read()
+        fp.close()
+        self.assertEqual(json.loads(content), {
+            'test_db_KeyAttribute_multi_User': {
+                users[0].key.object_id: {'name': users[0].name},
+                users[1].key.object_id: {'name': users[1].name},
+                users[2].key.object_id: {'name': users[2].name},
+            },
+            'test_db_KeyAttribute_multi_Group': {
+                group.key.object_id: {
+                    'name': group.name,
+                    'user_keys': [
+                        {'kind': 'test_db_KeyAttribute_multi_User', 'object_id': users[0].key.object_id},
+                        {'kind': 'test_db_KeyAttribute_multi_User', 'object_id': users[1].key.object_id},
+                        {'kind': 'test_db_KeyAttribute_multi_User', 'object_id': users[2].key.object_id},
+                    ],
+                },
+            },
+        })

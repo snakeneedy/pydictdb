@@ -98,6 +98,22 @@ class AttributeTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             db.IntegerAttribute(choices=[1, 2, 3], default=0)
 
+    def test_key_attr(self):
+        attr = db.KeyAttribute()
+        attr._do_validate_value(db.Key('User', 0)) # pass
+        with self.assertRaises(TypeError):
+            attr._do_validate_value(0)
+
+        attr = db.KeyAttribute(kind='User')
+        attr._do_validate_value(db.Key('User', 0)) # pass
+        with self.assertRaises(ValueError):
+            attr._do_validate_value(db.Key('Group', 0))
+
+        attr = db.KeyAttribute(kind='User', default=[], repeated=True)
+        attr._do_validate_value([db.Key('User', 0), db.Key('User', 1)])
+        with self.assertRaises(ValueError):
+            attr._do_validate_value([db.Key('User', 0), db.Key('Group', 1)])
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):

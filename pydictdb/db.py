@@ -283,6 +283,24 @@ class Key(BaseObject):
         table.delete(self.object_id, ignore_exception=True)
 
 
+class KeyAttribute(DateAttribute):
+    _allowed_classes = [Key]
+
+    def __init__(self, kind=None, **kwargs):
+        super().__init__(**kwargs)
+        self.kind = kind
+
+    def validate_value(self, value):
+        # NOTE: always allow None as single value
+        if value is None:
+            return
+
+        super().validate_value(value)
+        if getattr(self, 'kind', None) and value.kind != self.kind:
+            raise ValueError("key kind must be '{}', but '{}'".format(
+                    self.kind, value.kind))
+
+
 # NOTE: different interface from `core.Query`
 class Query(object):
     def __init__(self, kind, test_func=lambda obj: True):

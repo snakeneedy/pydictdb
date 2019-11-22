@@ -53,7 +53,7 @@ class Table(object):
         except KeyError:
             pass
 
-    def _check_id(self, object_id):
+    def _do_validate_id(self, object_id):
         if object_id not in self.dictionary:
             if isinstance(object_id, str):
                 object_id = "'%s'" % object_id
@@ -78,7 +78,7 @@ class Table(object):
         return [self.get(object_id) for object_id in object_ids]
 
     def update(self, object_id, obj):
-        self._check_id(object_id)
+        self._do_validate_id(object_id)
         self._set_object(object_id, obj)
         return object_id
 
@@ -87,7 +87,7 @@ class Table(object):
             raise ValueError("size of object_ids and objects must be the same")
 
         for object_id in object_ids:
-            self._check_id(object_id)
+            self._do_validate_id(object_id)
 
         for object_id, obj in zip(object_ids, objects):
             self._set_object(object_id, obj)
@@ -109,13 +109,13 @@ class Table(object):
 
     def delete(self, object_id, ignore_exception=False):
         if not ignore_exception:
-            self._check_id(object_id)
+            self._do_validate_id(object_id)
 
         self._delete_object(object_id)
 
     def delete_multi(self, object_ids):
         for object_id in object_ids:
-            self._check_id(object_id)
+            self._do_validate_id(object_id)
 
         for object_id in object_ids:
             self._delete_object(object_id)

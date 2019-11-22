@@ -7,9 +7,9 @@ _database_in_use = core.Database()
 
 
 class Attribute(object):
-    _allowed_classes = (type(None),)
+    _allowed_classes = []
 
-    def __init__(self, default=None, repeated=False, kept=True):
+    def __init__(self, choices=None, default=None, repeated=False, kept=True):
         self.repeated = repeated
         if repeated and not (
                 isinstance(default, list) or isinstance(default, tuple)):
@@ -19,14 +19,25 @@ class Attribute(object):
         if repeated:
             default = list(default)
 
-        self.check_value_class(default)
+        if choices is not None:
+            choices = list(choices)
+            for choice in choices:
+                # NOTE: self attr. 'choices' is not yet set
+                self._do_validate_value(choice)
+
+        self.choices = choices
+        self._do_validate_value(default)
         self.default = default
         self.kept = bool(kept)
 
     def get_default(self):
         return copy.deepcopy(self.default)
 
-    def _post_check_value_class(self, value):
+    def validate_value(self, value):
+        # NOTE: always allow None as single value
+        if value is None:
+            return
+
         for _class in self._allowed_classes:
             if isinstance(value, _class):
                 break
@@ -34,12 +45,18 @@ class Attribute(object):
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
 
-    def check_value_class(self, value):
+        # NOTE: self attribute 'choices' is not yet set when validating argument
+        # 'choices' in '__init__'
+        if getattr(self, 'choices', None) and value not in self.choices:
+            msg = "value {} is not in the attribute choices".format(value)
+            raise ValueError(msg)
+
+    def _do_validate_value(self, value):
         if self.repeated:
             for val in value:
-                self._post_check_value_class(val)
+                self.validate_value(val)
         else:
-            self._post_check_value_class(value)
+            self.validate_value(value)
 
     def _post_decode(self, generic_value):
         return generic_value
@@ -61,35 +78,35 @@ class Attribute(object):
 
 
 class GenericAttribute(Attribute):
-    _allowed_classes = (bool, int, type(None), float, str)
+    _allowed_classes = [bool, int, float, str]
 
 
 class BooleanAttribute(Attribute):
-    _allowed_classes = (bool, type(None))
+    _allowed_classes = [bool]
 
 
 class IntegerAttribute(Attribute):
-    _allowed_classes = (int, type(None))
+    _allowed_classes = [int]
 
-    def _post_check_value_class(self, value):
+    def validate_value(self, value):
         # FIXME: isinstance(bool(), int) returns True
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super()._post_check_value_class(value)
+        super().validate_value(value)
 
 
 class FloatAttribute(Attribute):
-    _allowed_classes = (type(None), float)
+    _allowed_classes = [float]
 
 
 class StringAttribute(Attribute):
-    _allowed_classes = (type(None), str)
+    _allowed_classes = [str]
 
 
 # NOTE: issubclass(datetime.datetime, datetime.date) returns True
 class DateAttribute(Attribute):
-    _allowed_classes = (type(None), datetime.date)
+    _allowed_classes = [datetime.date]
 
     def __init__(self, fmt='%Y-%m-%d', **kwargs):
         super().__init__(**kwargs)
@@ -171,7 +188,7 @@ class Model(BaseObject):
         cls_dict = self.__class__.__dict__
         if name in cls_dict and isinstance(cls_dict[name], Attribute):
             try:
-                cls_dict[name].check_value_class(value)
+                cls_dict[name]._do_validate_value(value)
             except TypeError:
                 # NOTE: more readable error message
                 msg = "attribute '%s' type '%s' is not allowed" % (

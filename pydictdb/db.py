@@ -21,6 +21,9 @@ class Attribute(object):
 
         if choices is not None:
             choices = list(choices)
+            for choice in choices:
+                # NOTE: self attr. 'choices' is not yet set
+                self._do_validate_value(choice)
 
         self.choices = choices
         self._do_validate_value(default)
@@ -41,6 +44,12 @@ class Attribute(object):
         else:
             msg = "value type '%s' is not allowed" % type(value).__name__
             raise TypeError(msg)
+
+        # NOTE: self attribute 'choices' is not yet set when validating argument
+        # 'choices' in '__init__'
+        if getattr(self, 'choices', None) and value not in self.choices:
+            msg = "value {} is not in the attribute choices".format(value)
+            raise ValueError(msg)
 
     def _do_validate_value(self, value):
         if self.repeated:

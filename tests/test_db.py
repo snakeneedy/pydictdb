@@ -86,6 +86,18 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(attr.encode([now]), [now_str])
         self.assertEqual(attr.decode([now_str]), [now])
 
+    def test_choices(self):
+        db.IntegerAttribute(choices=None)
+        with self.assertRaises(TypeError):
+            db.IntegerAttribute(choices=['a'])
+
+        attr = db.IntegerAttribute(choices=[1, 2, 3])
+        with self.assertRaises(ValueError):
+            attr._do_validate_value(0)
+
+        with self.assertRaises(ValueError):
+            db.IntegerAttribute(choices=[1, 2, 3], default=0)
+
 
 class ModelTestCase(unittest.TestCase):
     def test_put(self):

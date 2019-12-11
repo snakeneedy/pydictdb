@@ -4,12 +4,6 @@ import unittest
 from pydictdb import storages
 
 
-class StorageTestCase(unittest.TestCase):
-    def test_init(self):
-        with self.assertRaises(TypeError):
-            sto = storages.Storage()
-
-
 class MemoryStorageTestCase(unittest.TestCase):
     def test_init_read_write(self):
         data = {'User': {'001': {'name': 'Sam', 'score': 100, 'height': 180.0}}}

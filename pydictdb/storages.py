@@ -4,7 +4,7 @@ import json
 import os
 
 
-class Storage(abc.ABC):
+class Storage(object):
     """This abstract class is to store data in different format. Implemented in
     :py:meth:`read` and :py:meth:`write`.
     """

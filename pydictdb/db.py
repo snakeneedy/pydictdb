@@ -97,7 +97,7 @@ class IntegerAttribute(Attribute):
         if isinstance(value, bool):
             raise TypeError("value type 'bool' is not allowed")
 
-        super().validate_value(value)
+        Attribute.validate_value(self, value)
 
 
 class FloatAttribute(Attribute):
@@ -113,7 +113,7 @@ class DateAttribute(Attribute):
     _allowed_classes = [datetime.date]
 
     def __init__(self, fmt='%Y-%m-%d', **kwargs):
-        super().__init__(**kwargs)
+        Attribute.__init__(self, **kwargs)
         self.fmt = fmt
 
     def _post_decode(self, generic_value):
@@ -129,7 +129,7 @@ class DateAttribute(Attribute):
 
 class DatetimeAttribute(DateAttribute):
     def __init__(self, fmt='%Y-%m-%d %H:%M:%S.%f', **kwargs):
-        super().__init__(fmt=fmt, **kwargs)
+        DateAttribute.__init__(self, fmt=fmt, **kwargs)
 
     def _post_decode(self, generic_value):
         if generic_value is None:
@@ -186,7 +186,7 @@ class Model(BaseObject):
             if name not in kwargs:
                 kwargs[name] = attr.get_default()
 
-        super().__init__(**kwargs)
+        BaseObject.__init__(self, **kwargs)
 
     def __setattr__(self, name, value):
         cls_dict = self.__class__.__dict__
@@ -199,10 +199,10 @@ class Model(BaseObject):
                         name, type(value).__name__)
                 raise TypeError(msg)
 
-        return super().__setattr__(name, value)
+        return BaseObject.__setattr__(self, name, value)
 
     def __getattribute__(self, name):
-        value = super().__getattribute__(name)
+        value = BaseObject.__getattribute__(self, name)
         if (isinstance(value, Attribute)
                 and value == getattr(self.__class__, name)):
             return value.get_default()
@@ -291,7 +291,7 @@ class KeyAttribute(DateAttribute):
     _allowed_classes = [Key]
 
     def __init__(self, kind=None, **kwargs):
-        super().__init__(**kwargs)
+        DateAttribute.__init__(self, **kwargs)
         self.kind = kind
 
     def validate_value(self, value):
@@ -299,7 +299,7 @@ class KeyAttribute(DateAttribute):
         if value is None:
             return
 
-        super().validate_value(value)
+        DateAttribute.validate_value(self, value)
         if getattr(self, 'kind', None) and value.kind != self.kind:
             raise ValueError("key kind must be '{}', but '{}'".format(
                     self.kind, value.kind))

@@ -3,6 +3,16 @@ import datetime
 from . import storages
 
 
+def timestamp(dt=None):
+    if dt is None:
+        dt = datetime.datetime.now()
+    try:
+        return dt.timestamp()
+    except AttributeError:
+        # 2.x compatible
+        return (dt - datetime.datetime.fromtimestamp(0)).total_seconds()
+
+
 class Database(object):
     def __init__(self, storage=storages.MemoryStorage(), auto_commit=True):
         self.storage = storage
@@ -61,7 +71,7 @@ class Table(object):
 
     @classmethod
     def _next_id(cls):
-        return str(int(datetime.datetime.now().timestamp() * 1000000))
+        return str(int(timestamp() * 1000000))
 
     def insert(self, obj):
         object_id = self.__class__._next_id()

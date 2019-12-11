@@ -2,6 +2,7 @@ import abc
 import copy
 import json
 import os
+from collections import OrderedDict
 
 
 class Storage(abc.ABC):
@@ -24,7 +25,7 @@ class MemoryStorage(Storage):
         _memory (dict): The stored data without specific form.
     """
     def __init__(self):
-        self._memory = {}
+        self._memory = OrderedDict()
 
     def read(self):
         """Read data from the memory.
@@ -134,7 +135,7 @@ class JsonStorage(FileStorage):
         if content:
             return json.loads(content)
 
-        return {}
+        return OrderedDict()
 
     @classmethod
     def encode(cls, data):

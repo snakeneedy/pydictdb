@@ -1,5 +1,6 @@
 import copy
 import datetime
+from collections import OrderedDict
 from . import storages
 
 
@@ -9,7 +10,7 @@ class Database(object):
         if storage:
             self._tables = storage.read()
         else:
-            self._tables = {}
+            self._tables = OrderedDict()
 
         self.auto_commit = auto_commit
 
@@ -18,7 +19,7 @@ class Database(object):
 
     def table(self, kind):
         if kind not in self._tables:
-            self._tables[kind] = {}
+            self._tables[kind] = OrderedDict()
 
         table = Table(kind, self._tables[kind], self)
         return table
@@ -28,7 +29,7 @@ class Table(object):
     def __init__(self, kind, dictionary=None, database=None):
         self.kind = kind
         if dictionary is None:
-            self.dictionary = {}
+            self.dictionary = OrderedDict()
         else:
             # bind dictionary to the argument one
             self.dictionary = dictionary
